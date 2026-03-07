@@ -9,8 +9,11 @@ import { searchPhoto, titleToSearchQuery } from "@/lib/unsplash/client";
  * Auto-assign Unsplash cover images to articles and destinations that don't have one.
  */
 export async function POST(req: NextRequest) {
+  // Auth via session or admin secret header
+  const adminSecret = req.headers.get("x-admin-secret");
+  const expectedSecret = process.env.PULSE_CRON_SECRET || "";
   const session = await getServerSession(authOptions);
-  if (!session) {
+  if (!session && adminSecret !== expectedSecret) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
