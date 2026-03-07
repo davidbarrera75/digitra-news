@@ -5,6 +5,7 @@ const ADMIN_NAV = [
   { label: "Artículos", href: "/admin/articles" },
   { label: "Generar IA", href: "/admin/generate" },
   { label: "Curación", href: "/admin/curated" },
+  { label: "Pulse", href: "/admin/pulse" },
   { label: "Market Data", href: "/admin/market-data" },
   { label: "Categorías", href: "/admin/categories" },
   { label: "Destinos", href: "/admin/destinations" },

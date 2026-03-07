@@ -29,6 +29,13 @@ export default function Navbar() {
               </Link>
             ))}
             <Link
+              href="/pulse"
+              className="text-sm font-medium text-accent hover:text-accent/80 transition-colors flex items-center gap-1"
+            >
+              <span className="w-1.5 h-1.5 bg-accent rounded-full animate-pulse" />
+              Pulse
+            </Link>
+            <Link
               href="/buscar"
               className="text-gray-400 hover:text-primary transition-colors"
               aria-label="Buscar"
@@ -68,6 +75,13 @@ export default function Navbar() {
                 {link.label}
               </Link>
             ))}
+            <Link
+              href="/pulse"
+              onClick={() => setMobileOpen(false)}
+              className="block py-2 text-sm font-medium text-accent"
+            >
+              Pulse
+            </Link>
           </div>
         )}
       </nav>
