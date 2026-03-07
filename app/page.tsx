@@ -35,6 +35,13 @@ export default async function HomePage() {
                 className="group block"
               >
                 <div className="relative aspect-[16/9] rounded-2xl overflow-hidden bg-gradient-to-br from-accent/20 to-secondary/20 mb-4">
+                  {hero.coverImage && (
+                    <img
+                      src={hero.coverImage}
+                      alt={hero.coverImageAlt || hero.title}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-0 left-0 right-0 p-6 md:p-8">
                     {hero.category && (
@@ -140,6 +147,13 @@ export default async function HomePage() {
                 href={`/destinos/${dest.slug}`}
                 className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-gradient-to-br from-primary/80 to-accent/60"
               >
+                {dest.coverImage && (
+                  <img
+                    src={dest.coverImage}
+                    alt={dest.name}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
                 <div className="absolute inset-0 bg-black/20 group-hover:bg-black/10 transition-colors" />
                 <div className="absolute bottom-0 left-0 right-0 p-4">
                   <h3 className="font-display font-bold text-white text-lg">{dest.name}</h3>
