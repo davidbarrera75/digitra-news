@@ -14,7 +14,9 @@ export default function FlightsCard({ flights, cityName }: { flights: FlightsDat
               <p className="text-sm font-medium text-gray-700">
                 {route.from} → {cityName}
               </p>
-              <p className="text-[10px] text-gray-400">{route.fromCode} → destino</p>
+              <p className="text-[10px] text-gray-400">
+                {route.fromCode} → destino{route.airline ? ` · ${route.airline}` : ""}
+              </p>
             </div>
             <div className="text-right">
               <p className="text-lg font-mono font-bold text-primary">

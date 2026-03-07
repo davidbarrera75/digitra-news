@@ -3,6 +3,8 @@ import { getCityConfig, CityConfig } from "./config";
 import { fetchWeather } from "./weather";
 import { calculateDigitraScore } from "./score";
 import { generatePulseSummary } from "./ai-summary";
+import { generateCityEvents } from "./events-generator";
+import { scrapeAllFlightRoutes } from "@/lib/apify/flights-scraper";
 import { AccommodationData, FlightsData, EventsData, PulseData } from "./types";
 
 /**
@@ -19,13 +21,12 @@ export async function collectPulseForCity(citySlug: string): Promise<PulseData |
   today.setHours(0, 0, 0, 0);
 
   // Collect data in parallel
-  const [weather, accommodation, flights] = await Promise.all([
+  const [weather, accommodation, flights, events] = await Promise.all([
     fetchWeather(config.lat, config.lon),
     getAccommodationData(destination.id),
     getFlightsData(config),
+    getEventsDataDynamic(config),
   ]);
-
-  const events = getEventsData(config);
 
   // Calculate Digitra Score
   const scoreResult = calculateDigitraScore({
@@ -173,33 +174,68 @@ async function getAccommodationData(destinationId: number): Promise<Accommodatio
 }
 
 async function getFlightsData(config: CityConfig): Promise<FlightsData | null> {
-  // For MVP: generate realistic price ranges based on city and season
-  // These will be replaced by real Apify data when scrapers are configured
-  const basePrices: Record<string, number> = {
-    BOG: 150000,
-    MDE: 180000,
-    CTG: 200000,
-    CLO: 170000,
-    SMR: 190000,
-    BAQ: 185000,
-    BGA: 160000,
-    ADZ: 280000,
-  };
+  if (config.flightRoutes.length === 0) return null;
 
-  const seasonMultiplier = config.currentSeason === "alta" ? 1.3 : config.currentSeason === "baja" ? 0.8 : 1.0;
-  // Add daily variance
-  const dayVariance = 0.9 + Math.random() * 0.2;
+  try {
+    // Try real Apify scraping
+    const scrapedResults = await scrapeAllFlightRoutes(
+      config.flightRoutes,
+      config.airportCode
+    );
 
-  const routes = config.flightRoutes.map((route) => {
-    const basePrice = basePrices[config.airportCode] || 200000;
-    const price = Math.round(basePrice * seasonMultiplier * dayVariance / 1000) * 1000;
+    const routes = config.flightRoutes.map((route, i) => {
+      const scraped = scrapedResults[i];
+      if (scraped) {
+        return {
+          from: scraped.from,
+          fromCode: scraped.fromCode,
+          price: scraped.price,
+          currency: scraped.currency,
+          airline: scraped.airline,
+        };
+      }
+      // Fallback: estimated price for this route
+      return {
+        from: route.from,
+        fromCode: route.fromCode,
+        price: getEstimatedPrice(config.airportCode, config.currentSeason),
+        currency: "COP",
+      };
+    });
+
+    const prices = routes.map((r) => r.price);
+    const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
+    const cheapest = routes.reduce((a, b) => (a.price < b.price ? a : b));
+
     return {
-      from: route.from,
-      fromCode: route.fromCode,
-      price,
-      currency: "COP",
+      routes,
+      avgPrice,
+      cheapestRoute: cheapest.from,
+      updatedAt: new Date().toISOString(),
     };
-  });
+  } catch (err) {
+    console.error(`[Flights] Apify failed for ${config.airportCode}, using estimates:`, err);
+    return getEstimatedFlightsData(config);
+  }
+}
+
+function getEstimatedPrice(airportCode: string, season: "alta" | "media" | "baja"): number {
+  const basePrices: Record<string, number> = {
+    BOG: 150000, MDE: 180000, CTG: 200000, CLO: 170000,
+    SMR: 190000, BAQ: 185000, BGA: 160000, ADZ: 280000,
+  };
+  const seasonMultiplier = season === "alta" ? 1.3 : season === "baja" ? 0.8 : 1.0;
+  const basePrice = basePrices[airportCode] || 200000;
+  return Math.round((basePrice * seasonMultiplier) / 1000) * 1000;
+}
+
+function getEstimatedFlightsData(config: CityConfig): FlightsData | null {
+  const routes = config.flightRoutes.map((route) => ({
+    from: route.from,
+    fromCode: route.fromCode,
+    price: getEstimatedPrice(config.airportCode, config.currentSeason),
+    currency: "COP",
+  }));
 
   if (routes.length === 0) return null;
 
@@ -215,41 +251,11 @@ async function getFlightsData(config: CityConfig): Promise<FlightsData | null> {
   };
 }
 
-function getEventsData(config: CityConfig): EventsData {
-  // Manual events per city — update periodically
-  const cityEvents: Record<string, EventsData> = {
-    cartagena: {
-      season: config.currentSeason,
-      events: [
-        { name: "Festival Internacional de Cine", date: "2026-03-15", type: "festival" },
-        { name: "Temporada de cruceros", date: "2026-03-07", type: "turismo" },
-      ],
-    },
-    medellin: {
-      season: config.currentSeason,
-      events: [
-        { name: "Feria de las Flores prep", date: "2026-08-01", type: "festival" },
-      ],
-    },
-    bogota: {
-      season: config.currentSeason,
-      events: [
-        { name: "Festival Iberoamericano de Teatro", date: "2026-04-01", type: "cultura" },
-      ],
-    },
-    "santa-marta": {
-      season: config.currentSeason,
-      events: [
-        { name: "Temporada de avistamiento de ballenas", date: "2026-07-15", type: "naturaleza" },
-      ],
-    },
-    "san-andres": {
-      season: config.currentSeason,
-      events: [
-        { name: "Green Moon Festival", date: "2026-05-01", type: "festival" },
-      ],
-    },
-  };
-
-  return cityEvents[config.slug] || { season: config.currentSeason, events: [] };
+async function getEventsDataDynamic(config: CityConfig): Promise<EventsData> {
+  try {
+    return await generateCityEvents(config.name, config.currentSeason);
+  } catch (err) {
+    console.error(`[Events] Failed for ${config.name}:`, err);
+    return { season: config.currentSeason, events: [] };
+  }
 }
