@@ -4,7 +4,7 @@ import { fetchWeather } from "./weather";
 import { calculateDigitraScore } from "./score";
 import { generatePulseSummary } from "./ai-summary";
 import { generateCityEvents } from "./events-generator";
-import { scrapeAllFlightRoutes } from "@/lib/apify/flights-scraper";
+import { generateFlightPrices } from "./flights-generator";
 import { AccommodationData, FlightsData, EventsData, PulseData } from "./types";
 
 /**
@@ -177,46 +177,20 @@ async function getFlightsData(config: CityConfig): Promise<FlightsData | null> {
   if (config.flightRoutes.length === 0) return null;
 
   try {
-    // Try real Apify scraping
-    const scrapedResults = await scrapeAllFlightRoutes(
+    // Generate realistic prices with AI
+    const aiFlights = await generateFlightPrices(
+      config.name,
+      config.airportCode,
       config.flightRoutes,
-      config.airportCode
+      config.currentSeason
     );
-
-    const routes = config.flightRoutes.map((route, i) => {
-      const scraped = scrapedResults[i];
-      if (scraped) {
-        return {
-          from: scraped.from,
-          fromCode: scraped.fromCode,
-          price: scraped.price,
-          currency: scraped.currency,
-          airline: scraped.airline,
-        };
-      }
-      // Fallback: estimated price for this route
-      return {
-        from: route.from,
-        fromCode: route.fromCode,
-        price: getEstimatedPrice(config.airportCode, config.currentSeason),
-        currency: "COP",
-      };
-    });
-
-    const prices = routes.map((r) => r.price);
-    const avgPrice = Math.round(prices.reduce((a, b) => a + b, 0) / prices.length);
-    const cheapest = routes.reduce((a, b) => (a.price < b.price ? a : b));
-
-    return {
-      routes,
-      avgPrice,
-      cheapestRoute: cheapest.from,
-      updatedAt: new Date().toISOString(),
-    };
+    if (aiFlights) return aiFlights;
   } catch (err) {
-    console.error(`[Flights] Apify failed for ${config.airportCode}, using estimates:`, err);
-    return getEstimatedFlightsData(config);
+    console.error(`[Flights] AI generation failed for ${config.airportCode}:`, err);
   }
+
+  // Fallback to static estimates
+  return getEstimatedFlightsData(config);
 }
 
 function getEstimatedPrice(airportCode: string, season: "alta" | "media" | "baja"): number {
