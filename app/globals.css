@@ -2,26 +2,94 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@layer base {
+  body {
+    @apply bg-surface text-body antialiased;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  h1, h2, h3, h4 {
+    @apply font-display text-primary;
+  }
+
+  p, span, li, a {
+    @apply font-body;
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
+@layer components {
+  .article-content h2 {
+    @apply text-2xl font-display font-bold text-primary mt-8 mb-4;
+  }
 
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .article-content h3 {
+    @apply text-xl font-display font-semibold text-primary mt-6 mb-3;
+  }
+
+  .article-content p {
+    @apply text-base leading-relaxed text-body mb-4;
+  }
+
+  .article-content a {
+    @apply text-accent hover:underline;
+  }
+
+  .article-content img {
+    @apply rounded-lg my-6;
+  }
+
+  .article-content ul, .article-content ol {
+    @apply pl-6 mb-4 space-y-2;
+  }
+
+  .article-content li {
+    @apply text-base leading-relaxed text-body;
+  }
+
+  .article-content blockquote {
+    @apply border-l-4 border-accent pl-4 italic text-gray-500 my-6;
+  }
+
+  .article-content table {
+    @apply w-full border-collapse my-6 text-sm;
+  }
+
+  .article-content thead {
+    @apply bg-primary text-white;
+  }
+
+  .article-content th {
+    @apply px-4 py-3 text-left font-semibold text-xs uppercase tracking-wider;
+  }
+
+  .article-content tbody tr {
+    @apply border-b border-gray-100;
+  }
+
+  .article-content tbody tr:hover {
+    @apply bg-gray-50;
+  }
+
+  .article-content td {
+    @apply px-4 py-3;
+  }
+
+  .article-content table strong {
+    @apply text-primary;
+  }
+
+  .data-card {
+    @apply bg-white rounded-xl border border-border p-6 hover:shadow-lg transition-shadow;
+  }
+
+  .category-pill {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium uppercase tracking-wide;
+  }
+
+  .trend-up {
+    @apply text-secondary;
+  }
+
+  .trend-down {
+    @apply text-red-500;
   }
 }

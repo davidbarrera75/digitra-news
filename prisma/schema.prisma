@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Article {
+  id              Int       @id @default(autoincrement())
+  slug            String    @unique @db.VarChar(255)
+  title           String    @db.VarChar(500)
+  subtitle        String?   @db.VarChar(500)
+  content         String    @db.Text
+  excerpt         String?   @db.VarChar(500)
+  coverImage      String?   @map("cover_image") @db.VarChar(500)
+  coverImageAlt   String?   @map("cover_image_alt") @db.VarChar(255)
+  categoryId      Int?      @map("category_id")
+  subcategory     String?   @db.VarChar(100)
+  sourceType      String    @default("original") @map("source_type") @db.VarChar(20)
+  sourceUrl       String?   @map("source_url") @db.VarChar(500)
+  sourceName      String?   @map("source_name") @db.VarChar(200)
+  metaTitle       String?   @map("meta_title") @db.VarChar(200)
+  metaDescription String?   @map("meta_description") @db.VarChar(320)
+  canonicalUrl    String?   @map("canonical_url") @db.VarChar(500)
+  ogImage         String?   @map("og_image") @db.VarChar(500)
+  readingTime     Int       @default(5) @map("reading_time")
+  faqItems        Json?     @map("faq_items")
+  tags            String[]
+  dataHighlights  Json?     @map("data_highlights")
+  status          String    @default("draft") @db.VarChar(20)
+  isFeatured      Boolean   @default(false) @map("is_featured")
+  publishedAt     DateTime? @map("published_at")
+  scheduledAt     DateTime? @map("scheduled_at")
+  seoKeyword      String?   @map("seo_keyword") @db.VarChar(200)
+  viewsCount      Int       @default(0) @map("views_count")
+  sharesCount     Int       @default(0) @map("shares_count")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  category     Category?            @relation(fields: [categoryId], references: [id])
+  destinations ArticleDestination[]
+  ctaClicks    CtaClick[]
+  pageViews    PageView[]
+
+  @@index([status])
+  @@index([categoryId])
+  @@index([publishedAt(sort: Desc)])
+  @@index([isFeatured])
+  @@index([sourceType])
+  @@map("articles")
+}
+
+model Category {
+  id              Int      @id @default(autoincrement())
+  name            String   @db.VarChar(100)
+  slug            String   @unique @db.VarChar(100)
+  description     String?  @db.VarChar(500)
+  metaTitle       String?  @map("meta_title") @db.VarChar(200)
+  metaDescription String?  @map("meta_description") @db.VarChar(320)
+  color           String?  @db.VarChar(7)
+  sortOrder       Int      @default(0) @map("sort_order")
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  articles       Article[]
+  curatedSources CuratedSource[]
+
+  @@map("categories")
+}
+
+model Destination {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(100)
+  slug         String   @unique @db.VarChar(100)
+  country      String   @db.VarChar(100)
+  countrySlug  String   @map("country_slug") @db.VarChar(100)
+  description  String?  @db.VarChar(500)
+  coverImage   String?  @map("cover_image") @db.VarChar(500)
+  latitude     Decimal? @db.Decimal(10, 8)
+  longitude    Decimal? @db.Decimal(11, 8)
+  articleCount Int      @default(0) @map("article_count")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  articles   ArticleDestination[]
+  marketData MarketData[]
+
+  @@map("destinations")
+}
+
+model ArticleDestination {
+  articleId     Int     @map("article_id")
+  destinationId Int     @map("destination_id")
+  isPrimary     Boolean @default(false) @map("is_primary")
+
+  article     Article     @relation(fields: [articleId], references: [id], onDelete: Cascade)
+  destination Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@id([articleId, destinationId])
+  @@map("article_destinations")
+}
+
+model Subscriber {
+  id          Int       @id @default(autoincrement())
+  email       String    @unique @db.VarChar(255)
+  name        String?   @db.VarChar(200)
+  source      String?   @db.VarChar(50)
+  isActive    Boolean   @default(true) @map("is_active")
+  confirmedAt DateTime? @map("confirmed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  @@map("subscribers")
+}
+
+model CtaClick {
+  id             Int      @id @default(autoincrement())
+  articleId      Int?     @map("article_id")
+  ctaType        String?  @map("cta_type") @db.VarChar(50)
+  ctaText        String?  @map("cta_text") @db.VarChar(200)
+  destinationUrl String?  @map("destination_url") @db.VarChar(500)
+  referrerUrl    String?  @map("referrer_url") @db.VarChar(500)
+  userAgent      String?  @map("user_agent") @db.VarChar(500)
+  clickedAt      DateTime @default(now()) @map("clicked_at")
+
+  article Article? @relation(fields: [articleId], references: [id])
+
+  @@index([articleId])
+  @@map("cta_clicks")
+}
+
+model CuratedSource {
+  id            Int       @id @default(autoincrement())
+  name          String    @db.VarChar(200)
+  url           String    @db.VarChar(500)
+  rssFeedUrl    String?   @map("rss_feed_url") @db.VarChar(500)
+  categoryId    Int?      @map("category_id")
+  isActive      Boolean   @default(true) @map("is_active")
+  lastFetchedAt DateTime? @map("last_fetched_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+
+  category Category? @relation(fields: [categoryId], references: [id])
+
+  @@map("curated_sources")
+}
+
+model PageView {
+  id          Int      @id @default(autoincrement())
+  articleId   Int?     @map("article_id")
+  path        String?  @db.VarChar(500)
+  referrer    String?  @db.VarChar(500)
+  aiSource    String?  @map("ai_source") @db.VarChar(50)
+  utmSource   String?  @map("utm_source") @db.VarChar(100)
+  utmMedium   String?  @map("utm_medium") @db.VarChar(100)
+  utmCampaign String?  @map("utm_campaign") @db.VarChar(100)
+  country     String?  @db.VarChar(5)
+  device      String?  @db.VarChar(20)
+  viewedAt    DateTime @default(now()) @map("viewed_at")
+
+  article Article? @relation(fields: [articleId], references: [id])
+
+  @@index([articleId])
+  @@index([aiSource])
+  @@map("page_views")
+}
+
+model MarketData {
+  id            Int      @id @default(autoincrement())
+  destinationId Int?     @map("destination_id")
+  metricType    String   @map("metric_type") @db.VarChar(50)
+  value         Decimal  @db.Decimal(12, 2)
+  previousValue Decimal? @map("previous_value") @db.Decimal(12, 2)
+  period        String   @db.VarChar(20)
+  source        String?  @db.VarChar(100)
+  rawData       Json?    @map("raw_data")
+  collectedAt   DateTime @default(now()) @map("collected_at")
+
+  destination Destination? @relation(fields: [destinationId], references: [id])
+
+  @@index([destinationId, metricType, period])
+  @@map("market_data")
+}

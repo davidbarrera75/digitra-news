@@ -1,0 +1,22 @@
+services:
+  digitra-news:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.prod
+    container_name: digitra-news
+    ports:
+      - "3004:3000"
+    env_file:
+      - ../.env
+    environment:
+      - DATABASE_URL=postgresql://digitra:Digitra2026@host.docker.internal:5432/digitra_news
+      - NEXTAUTH_URL=https://digitra.news
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
