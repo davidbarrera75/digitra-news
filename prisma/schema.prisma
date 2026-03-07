@@ -66,6 +66,7 @@ model Category {
 
   articles       Article[]
   curatedSources CuratedSource[]
+  curatedItems   CuratedItem[]
 
   @@map("categories")
 }
@@ -141,9 +142,34 @@ model CuratedSource {
   lastFetchedAt DateTime? @map("last_fetched_at")
   createdAt     DateTime  @default(now()) @map("created_at")
 
-  category Category? @relation(fields: [categoryId], references: [id])
+  category    Category?     @relation(fields: [categoryId], references: [id])
+  curatedItems CuratedItem[]
 
   @@map("curated_sources")
+}
+
+model CuratedItem {
+  id                Int       @id @default(autoincrement())
+  title             String    @db.VarChar(500)
+  sourceUrl         String    @map("source_url") @db.VarChar(500)
+  sourceName        String    @map("source_name") @db.VarChar(200)
+  sourceId          Int?      @map("source_id")
+  originalExcerpt   String?   @map("original_excerpt") @db.Text
+  aiSummary         String?   @map("ai_summary") @db.Text
+  tags              String[]
+  relevanceScore    Int       @default(5) @map("relevance_score")
+  suggestedCategory String?   @map("suggested_category") @db.VarChar(50)
+  categoryId        Int?      @map("category_id")
+  status            String    @default("pending") @db.VarChar(20)
+  publishedAt       DateTime? @map("published_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  source   CuratedSource? @relation(fields: [sourceId], references: [id])
+  category Category?      @relation(fields: [categoryId], references: [id])
+
+  @@index([status])
+  @@index([relevanceScore(sort: Desc)])
+  @@map("curated_items")
 }
 
 model PageView {

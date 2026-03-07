@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { NAV_LINKS, SITE_NAME } from "@/lib/constants";
+import FooterNewsletter from "./FooterNewsletter";
 
 export default function Footer() {
   return (
@@ -72,19 +73,7 @@ export default function Footer() {
             <p className="text-gray-400 text-sm mb-3">
               Datos y tendencias del turismo en LATAM, cada semana.
             </p>
-            <form className="flex gap-2">
-              <input
-                type="email"
-                placeholder="tu@email.com"
-                className="flex-1 px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-sm text-white placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-accent"
-              />
-              <button
-                type="submit"
-                className="px-4 py-2 bg-accent hover:bg-accent/90 text-white text-sm font-medium rounded-lg transition-colors"
-              >
-                Ir
-              </button>
-            </form>
+            <FooterNewsletter />
           </div>
         </div>
 
