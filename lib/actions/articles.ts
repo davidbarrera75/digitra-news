@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/db";
 import { revalidatePath } from "next/cache";
+import { searchPhoto, titleToSearchQuery } from "@/lib/unsplash/client";
 
 export async function getPublishedArticles(limit = 10) {
   return prisma.article.findMany({
@@ -71,6 +72,22 @@ export async function createArticle(data: {
   dataHighlights?: string;
   faqItems?: string;
 }) {
+  // Auto-assign Unsplash cover image if none provided
+  let coverImage = data.coverImage || null;
+  let coverImageAlt = data.coverImageAlt || null;
+  if (!coverImage) {
+    try {
+      const query = titleToSearchQuery(data.title);
+      const photo = await searchPhoto(query);
+      if (photo) {
+        coverImage = photo.url;
+        coverImageAlt = photo.alt;
+      }
+    } catch (err) {
+      console.error("[Articles] Unsplash auto-assign failed:", err);
+    }
+  }
+
   const article = await prisma.article.create({
     data: {
       title: data.title,
@@ -86,8 +103,8 @@ export async function createArticle(data: {
       metaDescription: data.metaDescription || null,
       seoKeyword: data.seoKeyword || null,
       tags: data.tags || [],
-      coverImage: data.coverImage || null,
-      coverImageAlt: data.coverImageAlt || null,
+      coverImage,
+      coverImageAlt,
       readingTime: data.readingTime || 5,
       status: data.status || "draft",
       isFeatured: data.isFeatured || false,

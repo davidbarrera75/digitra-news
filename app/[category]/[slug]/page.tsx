@@ -100,13 +100,20 @@ export default async function ArticlePage({ params }: Props) {
             </header>
 
             {article.coverImage && (
-              <div className="relative aspect-[16/9] rounded-xl overflow-hidden mb-8 bg-gray-100">
-                <img
-                  src={article.coverImage}
-                  alt={article.coverImageAlt || article.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
+              <figure className="mb-8">
+                <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-gray-100">
+                  <img
+                    src={article.coverImage}
+                    alt={article.coverImageAlt || article.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                {article.coverImage.includes("unsplash.com") && (
+                  <figcaption className="text-[10px] text-gray-400 mt-1 text-right">
+                    Foto via <a href="https://unsplash.com/?utm_source=digitra_news&utm_medium=referral" target="_blank" rel="noopener noreferrer" className="underline hover:text-gray-600">Unsplash</a>
+                  </figcaption>
+                )}
+              </figure>
             )}
 
             <div
