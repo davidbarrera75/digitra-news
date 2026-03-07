@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import GoogleAnalytics from "@/components/analytics/GoogleAnalytics";
 import { SITE_NAME, SITE_DESCRIPTION, SITE_URL } from "@/lib/constants";
 import "./globals.css";
 
@@ -30,6 +31,9 @@ export const metadata: Metadata = {
   },
   description: SITE_DESCRIPTION,
   metadataBase: new URL(SITE_URL),
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,
@@ -37,6 +41,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION || undefined,
   },
 };
 
@@ -48,6 +55,34 @@ export default function RootLayout({
   return (
     <html lang="es" className={`${inter.variable} ${playfair.variable} ${jetbrains.variable}`}>
       <body className="font-body">
+        <GoogleAnalytics />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              {
+                "@context": "https://schema.org",
+                "@type": "Organization",
+                name: SITE_NAME,
+                url: SITE_URL,
+                logo: `${SITE_URL}/logo.png`,
+                description: SITE_DESCRIPTION,
+                sameAs: ["https://digitra.rentals"],
+              },
+              {
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                name: SITE_NAME,
+                url: SITE_URL,
+                potentialAction: {
+                  "@type": "SearchAction",
+                  target: `${SITE_URL}/buscar?q={search_term_string}`,
+                  "query-input": "required name=search_term_string",
+                },
+              },
+            ]),
+          }}
+        />
         <Navbar />
         <main className="min-h-screen">{children}</main>
         <Footer />

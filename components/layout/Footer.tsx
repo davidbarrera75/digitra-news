@@ -52,6 +52,11 @@ export default function Footer() {
                 </a>
               </li>
               <li>
+                <Link href="/pulse" className="text-gray-400 hover:text-white text-sm transition-colors">
+                  Pulse
+                </Link>
+              </li>
+              <li>
                 <Link href="/newsletter" className="text-gray-400 hover:text-white text-sm transition-colors">
                   Newsletter
                 </Link>

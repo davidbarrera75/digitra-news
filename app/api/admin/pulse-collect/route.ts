@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { collectPulseForCity, collectAllPulses } from "@/lib/pulse/collector";
-
-// Internal-only endpoint. Protected by secret header or query param.
-const COLLECT_SECRET = process.env.PULSE_CRON_SECRET || "digitra-pulse-2026";
 
 export async function POST(req: NextRequest) {
   try {
-    // Auth via header (from admin UI) or query param (from cron)
-    const headerSecret = req.headers.get("x-pulse-secret");
-    const { searchParams } = new URL(req.url);
-    const querySecret = searchParams.get("secret");
-
-    if (headerSecret !== COLLECT_SECRET && querySecret !== COLLECT_SECRET) {
+    const session = await getServerSession(authOptions);
+    if (!session) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
@@ -28,11 +23,10 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Collect all cities
     const results = await collectAllPulses();
     return NextResponse.json({ success: true, results });
   } catch (err) {
-    console.error("[Pulse/Collect]", err);
+    console.error("[Admin/Pulse-Collect]", err);
     return NextResponse.json(
       { error: err instanceof Error ? err.message : "Error al recolectar datos" },
       { status: 500 }

@@ -32,7 +32,7 @@ export default function AdminPulsePage() {
     setMessage("Recolectando datos para todas las ciudades...");
     setResults([]);
     try {
-      const res = await fetch("/api/pulse/collect", {
+      const res = await fetch("/api/admin/pulse-collect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({}),
@@ -52,7 +52,7 @@ export default function AdminPulsePage() {
   const collectCity = async (slug: string) => {
     setCollectingCity(slug);
     try {
-      const res = await fetch("/api/pulse/collect", {
+      const res = await fetch("/api/admin/pulse-collect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ city: slug }),
@@ -116,7 +116,7 @@ export default function AdminPulsePage() {
       <div className="mt-8 p-4 bg-gray-50 rounded-lg text-sm text-gray-600">
         <p className="font-medium mb-2">Cron automatico</p>
         <code className="block p-2 bg-white rounded text-xs font-mono">
-          0 6 * * * curl -X POST https://digitra.news/api/pulse/collect?secret=TU_SECRET -H Content-Type:application/json -d {`'{}'`}
+          0 6 * * * curl -s -X POST &quot;https://digitra.news/api/pulse/collect?secret=$PULSE_CRON_SECRET&quot; -H Content-Type:application/json -d {`'{}'`}
         </code>
         <p className="mt-2 text-xs text-gray-400">Agrega PULSE_CRON_SECRET al .env del VPS.</p>
       </div>

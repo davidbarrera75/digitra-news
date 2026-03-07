@@ -23,6 +23,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const staticPages: MetadataRoute.Sitemap = [
     { url: SITE_URL, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
+    { url: `${SITE_URL}/pulse`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/buscar`, changeFrequency: "weekly", priority: 0.3 },
     { url: `${SITE_URL}/newsletter`, changeFrequency: "monthly", priority: 0.3 },
   ];
@@ -46,5 +47,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.9,
   }));
 
-  return [...staticPages, ...categoryPages, ...destinationPages, ...articlePages];
+  const pulsePages: MetadataRoute.Sitemap = destinations.map((dest) => ({
+    url: `${SITE_URL}/pulse/${dest.slug}`,
+    lastModified: new Date(),
+    changeFrequency: "daily" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...categoryPages, ...destinationPages, ...pulsePages, ...articlePages];
 }
