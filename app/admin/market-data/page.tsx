@@ -26,8 +26,16 @@ export default function MarketDataPage() {
     setLoading(true);
     try {
       const res = await fetch("/api/admin/market-summary");
+      if (!res.ok) {
+        setMessage(res.status === 401 ? "Sesión expirada. Vuelve a iniciar sesión." : "Error al cargar datos");
+        return;
+      }
       const json = await res.json();
-      setData(json);
+      if (Array.isArray(json)) {
+        setData(json);
+      } else {
+        setMessage("Error al cargar datos");
+      }
     } catch {
       setMessage("Error al cargar datos");
     } finally {
