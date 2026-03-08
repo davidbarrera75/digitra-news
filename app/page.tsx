@@ -128,9 +128,9 @@ export default async function HomePage() {
           <Link href="/datos" className="text-sm text-accent hover:underline">Ver todos →</Link>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <DataCard label="Precio promedio Airbnb" value="$185K" trend={12} sublabel="Cartagena · Marzo 2026" />
-          <DataCard label="Ocupación promedio" value="72%" trend={5} sublabel="Top 5 ciudades Colombia" />
-          <DataCard label="Destino más buscado" value="Guatapé" trend={45} sublabel="Google Trends · Última semana" />
+          <DataCard label="Precio promedio Airbnb" value="$136 USD" trend={0} sublabel="Medellín · Marzo 2026 · 5,959 listings" />
+          <DataCard label="Mediana por noche" value="$72 USD" trend={0} sublabel="Medellín · 50% de propiedades bajo este precio" />
+          <DataCard label="Rango budget" value="$44 USD" trend={0} sublabel="Medellín · Cuartil más económico (Q1)" />
         </div>
       </section>
 
