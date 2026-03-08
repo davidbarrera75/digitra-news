@@ -7,7 +7,8 @@ function getToken() {
 }
 
 export async function runActor(actorId: string, input: object, timeoutSecs = 300): Promise<string> {
-  const res = await fetch(`${APIFY_BASE}/acts/${actorId}/runs?token=${getToken()}`, {
+  const encodedId = actorId.replace("/", "~");
+  const res = await fetch(`${APIFY_BASE}/acts/${encodedId}/runs?token=${getToken()}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
