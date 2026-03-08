@@ -56,69 +56,9 @@ function calculateStats(prices: number[]): { avg: number; median: number; min: n
   };
 }
 
-function buildAirbnbSearchUrl(city: string, checkIn: string, checkOut: string): string {
-  const query = encodeURIComponent(city);
-  const nights = Math.max(1, Math.round(
-    (new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000
-  ));
-  return `https://www.airbnb.com/s/${query}/homes?checkin=${checkIn}&checkout=${checkOut}&price_filter_num_nights=${nights}&currency=USD`;
-}
-
-export async function scrapeAirbnbPrices(city: string, checkIn?: string, checkOut?: string): Promise<ScrapingResult> {
-  const dates = checkIn && checkOut ? { checkIn, checkOut } : getNextWeekDates();
-  const searchUrl = buildAirbnbSearchUrl(city, dates.checkIn, dates.checkOut);
-
-  const datasetId = await runActor("easyapi/airbnb-search-results-scraper", {
-    searchUrls: [searchUrl],
-    maxItems: 80,
-  });
-
-  const items = await getDatasetItems<ApifyItem>(datasetId);
-
-  // Output: price.perNight = "$ 54", rating.average = "4.82 (127)"
-  const listings: ScrapedListing[] = items
-    .filter((item) => {
-      const priceObj = item.price as Record<string, unknown> | undefined;
-      return priceObj?.perNight;
-    })
-    .map((item) => {
-      const priceObj = item.price as Record<string, unknown> | undefined;
-      const perNightStr = getStr(priceObj?.perNight);
-      const nightlyPrice = Number(perNightStr.replace(/[^0-9.]/g, "")) || 0;
-
-      const ratingObj = item.rating as Record<string, unknown> | undefined;
-      const ratingStr = getStr(ratingObj?.average); // "4.82 (127)"
-      const ratingMatch = ratingStr.match(/([\d.]+)\s*\((\d+)\)/);
-      const rating = ratingMatch ? Number(ratingMatch[1]) : 0;
-      const reviews = ratingMatch ? Number(ratingMatch[2]) : 0;
-
-      return {
-        name: getStr(item.name || item.title),
-        price: nightlyPrice,
-        currency: "USD",
-        url: getStr(item.listingUrl || item.url),
-        rating,
-        reviews,
-        type: getStr(item.title),
-      };
-    })
-    .filter((l) => l.price > 0 && l.price < 5000);
-
-  const prices = listings.map((l) => l.price);
-  const stats = calculateStats(prices);
-
-  return {
-    averagePrice: stats.avg,
-    medianPrice: stats.median,
-    minPrice: stats.min,
-    maxPrice: stats.max,
-    listingsCount: listings.length,
-    source: "Airbnb",
-    rawListings: listings,
-  };
-}
-
-export async function scrapeBookingPrices(city: string, checkIn?: string, checkOut?: string): Promise<ScrapingResult> {
+// Single source: Booking.com via voyager/booking-scraper (PPE $0.005/listing)
+// 30 listings per scan = $0.15/scan — safe within $29/month budget
+export async function scrapeMarketPrices(city: string, checkIn?: string, checkOut?: string): Promise<ScrapingResult> {
   const dates = checkIn && checkOut ? { checkIn, checkOut } : getNextWeekDates();
   const nights = Math.max(1, Math.round(
     (new Date(dates.checkOut).getTime() - new Date(dates.checkIn).getTime()) / 86400000
@@ -129,7 +69,7 @@ export async function scrapeBookingPrices(city: string, checkIn?: string, checkO
     checkIn: dates.checkIn,
     checkOut: dates.checkOut,
     currency: "USD",
-    maxItems: 80,
+    maxItems: 30,
     sortBy: "distance_from_search",
   });
 

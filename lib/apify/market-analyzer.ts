@@ -3,28 +3,17 @@ import { ScrapingResult } from "./scrapers";
 
 export interface MarketInsights {
   averageNightlyRate: number;
-  airbnbAvg: number;
   bookingAvg: number;
   priceRange: { budget: number; mid: number; premium: number };
   totalListings: number;
-  airbnbListings: number;
-  bookingListings: number;
   trend: "up" | "down" | "stable";
   trendPercent: number;
 }
 
 export function analyzeMarketData(
-  airbnbData: ScrapingResult | null,
-  bookingData: ScrapingResult | null
+  data: ScrapingResult
 ): Omit<MarketInsights, "trend" | "trendPercent"> {
-  const airbnbAvg = airbnbData?.averagePrice || 0;
-  const bookingAvg = bookingData?.averagePrice || 0;
-
-  const prices = [
-    ...(airbnbData?.rawListings.map((l) => l.price) || []),
-    ...(bookingData?.rawListings.map((l) => l.price) || []),
-  ].sort((a, b) => a - b);
-
+  const prices = data.rawListings.map((l) => l.price).sort((a, b) => a - b);
   const avgRate = prices.length > 0 ? Math.round(prices.reduce((a, b) => a + b, 0) / prices.length) : 0;
 
   const q1 = Math.floor(prices.length * 0.25);
@@ -33,16 +22,13 @@ export function analyzeMarketData(
 
   return {
     averageNightlyRate: avgRate,
-    airbnbAvg,
-    bookingAvg,
+    bookingAvg: data.averagePrice,
     priceRange: {
       budget: prices[q1] || 0,
       mid: prices[q2] || 0,
       premium: prices[q3] || 0,
     },
-    totalListings: (airbnbData?.listingsCount || 0) + (bookingData?.listingsCount || 0),
-    airbnbListings: airbnbData?.listingsCount || 0,
-    bookingListings: bookingData?.listingsCount || 0,
+    totalListings: data.listingsCount,
   };
 }
 
@@ -68,7 +54,6 @@ export async function calculateTrend(
 export async function saveMarketData(destinationId: number, insights: MarketInsights, rawData?: object) {
   const metrics = [
     { type: "avg_nightly_rate", value: insights.averageNightlyRate },
-    { type: "airbnb_avg", value: insights.airbnbAvg },
     { type: "booking_avg", value: insights.bookingAvg },
     { type: "budget_price", value: insights.priceRange.budget },
     { type: "mid_price", value: insights.priceRange.mid },
@@ -87,7 +72,7 @@ export async function saveMarketData(destinationId: number, insights: MarketInsi
           metricType: m.type,
           value: m.value,
           period,
-          source: "apify",
+          source: "booking",
           rawData: m.type === "avg_nightly_rate" ? (rawData as object) : undefined,
           collectedAt: now,
         },

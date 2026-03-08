@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { scrapeAirbnbPrices, scrapeBookingPrices } from "@/lib/apify/scrapers";
+import { scrapeMarketPrices } from "@/lib/apify/scrapers";
 import { analyzeMarketData, calculateTrend, saveMarketData } from "@/lib/apify/market-analyzer";
 
 export async function POST(req: NextRequest) {
@@ -24,36 +24,22 @@ export async function POST(req: NextRequest) {
 
     const searchTerm = `${destination.name}, ${destination.country}`;
 
-    // Scrape both platforms in parallel
-    const [airbnbResult, bookingResult] = await Promise.allSettled([
-      scrapeAirbnbPrices(searchTerm, checkIn, checkOut),
-      scrapeBookingPrices(searchTerm, checkIn, checkOut),
-    ]);
+    const result = await scrapeMarketPrices(searchTerm, checkIn, checkOut);
 
-    const airbnb = airbnbResult.status === "fulfilled" ? airbnbResult.value : null;
-    const booking = bookingResult.status === "fulfilled" ? bookingResult.value : null;
-
-    if (!airbnb && !booking) {
+    if (result.listingsCount === 0) {
       return NextResponse.json(
-        {
-          error: "No se pudieron obtener datos de ninguna plataforma",
-          details: {
-            airbnb: airbnbResult.status === "rejected" ? String(airbnbResult.reason) : null,
-            booking: bookingResult.status === "rejected" ? String(bookingResult.reason) : null,
-          },
-        },
+        { error: `No se encontraron listings para ${destination.name}` },
         { status: 500 }
       );
     }
 
-    const analysis = analyzeMarketData(airbnb, booking);
+    const analysis = analyzeMarketData(result);
     const trendInfo = await calculateTrend(destinationId, analysis.averageNightlyRate);
 
     const insights = { ...analysis, ...trendInfo };
 
     await saveMarketData(destinationId, insights, {
-      airbnb: airbnb ? { avg: airbnb.averagePrice, count: airbnb.listingsCount } : null,
-      booking: booking ? { avg: booking.averagePrice, count: booking.listingsCount } : null,
+      booking: { avg: result.averagePrice, count: result.listingsCount },
       scannedAt: new Date().toISOString(),
     });
 
@@ -61,8 +47,7 @@ export async function POST(req: NextRequest) {
       destination: destination.name,
       insights,
       sources: {
-        airbnb: airbnb ? { listings: airbnb.listingsCount, avg: airbnb.averagePrice } : "failed",
-        booking: booking ? { listings: booking.listingsCount, avg: booking.averagePrice } : "failed",
+        booking: { listings: result.listingsCount, avg: result.averagePrice },
       },
     });
   } catch (err) {
