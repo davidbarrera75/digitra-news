@@ -58,34 +58,38 @@ function calculateStats(prices: number[]): { avg: number; median: number; min: n
 
 export async function scrapeAirbnbPrices(city: string, checkIn?: string, checkOut?: string): Promise<ScrapingResult> {
   const dates = checkIn && checkOut ? { checkIn, checkOut } : getNextWeekDates();
+  const nights = Math.max(1, Math.round(
+    (new Date(dates.checkOut).getTime() - new Date(dates.checkIn).getTime()) / 86400000
+  ));
 
-  const datasetId = await runActor("tri_angle/airbnb-rooms-urls-scraper", {
-    location: city,
+  const datasetId = await runActor("tri_angle/airbnb-scraper", {
+    locationQueries: [city],
     checkIn: dates.checkIn,
     checkOut: dates.checkOut,
     currency: "USD",
-    maxItems: 80,
   });
 
   const items = await getDatasetItems<ApifyItem>(datasetId);
 
   const listings: ScrapedListing[] = items
     .filter((item) => {
-      const pricing = item.pricing as Record<string, unknown> | undefined;
-      const rate = pricing?.rate as Record<string, unknown> | undefined;
-      return item.price || rate?.amount;
+      const priceObj = item.price as Record<string, unknown> | undefined;
+      return priceObj?.price;
     })
     .map((item) => {
-      const pricing = item.pricing as Record<string, unknown> | undefined;
-      const rate = pricing?.rate as Record<string, unknown> | undefined;
+      const priceObj = item.price as Record<string, unknown> | undefined;
+      const priceStr = getStr(priceObj?.price);
+      const totalPrice = Number(priceStr.replace(/[^0-9.]/g, "")) || 0;
+      const nightlyPrice = Math.round(totalPrice / nights);
+      const ratingObj = item.rating as Record<string, unknown> | undefined;
       return {
-        name: getStr(item.name || item.title),
-        price: getNum(item.price || rate?.amount),
+        name: getStr(item.sharingConfigTitle || item.seoTitle),
+        price: nightlyPrice,
         currency: "USD",
         url: getStr(item.url),
-        rating: getNum(item.rating || item.stars),
-        reviews: getNum(item.reviewsCount || item.numberOfGuests),
-        type: getStr(item.roomType || item.type),
+        rating: getNum(ratingObj?.guestSatisfaction),
+        reviews: getNum(ratingObj?.reviewsCount),
+        type: getStr(item.roomType),
       };
     })
     .filter((l) => l.price > 0 && l.price < 5000);
@@ -106,6 +110,9 @@ export async function scrapeAirbnbPrices(city: string, checkIn?: string, checkOu
 
 export async function scrapeBookingPrices(city: string, checkIn?: string, checkOut?: string): Promise<ScrapingResult> {
   const dates = checkIn && checkOut ? { checkIn, checkOut } : getNextWeekDates();
+  const nights = Math.max(1, Math.round(
+    (new Date(dates.checkOut).getTime() - new Date(dates.checkIn).getTime()) / 86400000
+  ));
 
   const datasetId = await runActor("voyager/booking-scraper", {
     search: city,
@@ -113,26 +120,24 @@ export async function scrapeBookingPrices(city: string, checkIn?: string, checkO
     checkOut: dates.checkOut,
     currency: "USD",
     maxItems: 80,
-    sortBy: "popularity",
+    sortBy: "distance_from_search",
   });
 
   const items = await getDatasetItems<ApifyItem>(datasetId);
 
   const listings: ScrapedListing[] = items
-    .filter((item) => item.price || item.priceFormatted)
+    .filter((item) => getNum(item.price) > 0)
     .map((item) => {
-      let price = getNum(item.price);
-      if (!price && item.priceFormatted) {
-        price = Number(String(item.priceFormatted).replace(/[^0-9.]/g, "")) || 0;
-      }
+      const totalPrice = getNum(item.price);
+      const nightlyPrice = Math.round(totalPrice / nights);
       return {
-        name: getStr(item.name || item.hotel_name),
-        price,
+        name: getStr(item.name),
+        price: nightlyPrice,
         currency: "USD",
-        url: getStr(item.url || item.link),
-        rating: getNum(item.rating || item.review_score),
-        reviews: getNum(item.reviewCount || item.review_nr),
-        type: getStr(item.type || item.accommodation_type || "hotel"),
+        url: getStr(item.url),
+        rating: getNum(item.rating),
+        reviews: getNum(item.reviews),
+        type: getStr(item.type || "hotel"),
       };
     })
     .filter((l) => l.price > 0 && l.price < 5000);
