@@ -6,6 +6,15 @@ function getToken() {
   return token;
 }
 
+async function safeJson(res: Response, context: string) {
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`${context}: expected JSON but got ${res.status} — ${text.slice(0, 200)}`);
+  }
+}
+
 export async function runActor(actorId: string, input: object, timeoutSecs = 300): Promise<string> {
   const encodedId = actorId.replace("/", "~");
   const res = await fetch(`${APIFY_BASE}/acts/${encodedId}/runs?token=${getToken()}`, {
@@ -19,10 +28,10 @@ export async function runActor(actorId: string, input: object, timeoutSecs = 300
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`Apify run failed: ${res.status} ${err}`);
+    throw new Error(`Apify run failed: ${res.status} ${err.slice(0, 200)}`);
   }
 
-  const run = await res.json();
+  const run = await safeJson(res, "Apify run start");
   const runId = run.data.id;
 
   // Poll for completion
@@ -30,7 +39,11 @@ export async function runActor(actorId: string, input: object, timeoutSecs = 300
   while (status === "RUNNING" || status === "READY") {
     await new Promise((r) => setTimeout(r, 5000));
     const pollRes = await fetch(`${APIFY_BASE}/actor-runs/${runId}?token=${getToken()}`);
-    const pollData = await pollRes.json();
+    if (!pollRes.ok) {
+      const err = await pollRes.text();
+      throw new Error(`Apify poll failed: ${pollRes.status} ${err.slice(0, 200)}`);
+    }
+    const pollData = await safeJson(pollRes, "Apify poll");
     status = pollData.data.status;
 
     if (status === "FAILED" || status === "TIMED-OUT" || status === "ABORTED") {
@@ -43,6 +56,9 @@ export async function runActor(actorId: string, input: object, timeoutSecs = 300
 
 export async function getDatasetItems<T = Record<string, unknown>>(datasetId: string): Promise<T[]> {
   const res = await fetch(`${APIFY_BASE}/datasets/${datasetId}/items?token=${getToken()}&format=json`);
-  if (!res.ok) throw new Error(`Failed to get dataset: ${res.status}`);
-  return res.json();
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`Failed to get dataset ${datasetId}: ${res.status} ${err.slice(0, 200)}`);
+  }
+  return safeJson(res, "Apify dataset");
 }
