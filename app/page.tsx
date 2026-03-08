@@ -5,18 +5,24 @@ import DataCard from "@/components/data/DataCard";
 import RentalsCTA from "@/components/cta/RentalsCTA";
 import NewsletterCTA from "@/components/cta/NewsletterCTA";
 import CategoryPill from "@/components/ui/CategoryPill";
+import PulseToday from "@/components/home/PulseToday";
+import SectorNews from "@/components/home/SectorNews";
 import { getPublishedArticles, getFeaturedArticle } from "@/lib/actions/articles";
 import { getDestinations } from "@/lib/actions/destinations";
 import { getCategories } from "@/lib/actions/categories";
+import { getLatestPulses } from "@/lib/actions/pulse";
+import { getLatestCuratedItems } from "@/lib/actions/curated";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default async function HomePage() {
-  const [articles, featured, destinations, categories] = await Promise.all([
+  const [articles, featured, destinations, categories, pulses, curatedItems] = await Promise.all([
     getPublishedArticles(10),
     getFeaturedArticle(),
     getDestinations(),
     getCategories(),
+    getLatestPulses(),
+    getLatestCuratedItems(4),
   ]);
 
   const hero = featured || articles[0];
@@ -116,6 +122,17 @@ export default async function HomePage() {
         )}
       </section>
 
+      {/* Pulse Hoy */}
+      <PulseToday
+        cities={pulses.map((p) => ({
+          name: p.destination.name,
+          slug: p.destination.slug,
+          score: p.score,
+          scoreLabel: p.scoreLabel,
+        }))}
+        date={format(new Date(), "d MMM yyyy", { locale: es })}
+      />
+
       {/* Data Turismo Section */}
       <section className="py-8 border-t border-border">
         <div className="flex items-center justify-between mb-6">
@@ -133,6 +150,16 @@ export default async function HomePage() {
           <DataCard label="Rango budget" value="$44 USD" trend={0} sublabel="Medellín · Cuartil más económico (Q1)" />
         </div>
       </section>
+
+      {/* Noticias del Sector */}
+      <SectorNews items={curatedItems.map((item) => ({
+        id: item.id,
+        title: item.title,
+        sourceName: item.sourceName,
+        sourceUrl: item.sourceUrl,
+        aiSummary: item.aiSummary,
+        createdAt: item.createdAt,
+      }))} />
 
       {/* Destinations Section */}
       {destinations.length > 0 && (

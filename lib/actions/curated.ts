@@ -44,3 +44,11 @@ export async function deleteCuratedSource(id: number) {
   await prisma.curatedSource.delete({ where: { id } });
   revalidatePath("/admin/curated/sources");
 }
+
+export async function getLatestCuratedItems(limit = 4) {
+  return prisma.curatedItem.findMany({
+    where: { relevanceScore: { gte: 5 } },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+}
