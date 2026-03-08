@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { NAV_LINKS, SITE_NAME } from "@/lib/constants";
 import FooterNewsletter from "./FooterNewsletter";
