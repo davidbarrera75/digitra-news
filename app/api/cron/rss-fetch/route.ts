@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { fetchAllFeeds } from "@/lib/curate/rss-fetcher";
 import { summarizeArticle } from "@/lib/curate/summarizer";
 import { prisma } from "@/lib/db";
+import { slugify } from "@/lib/utils/slugify";
 
 const CRON_SECRET = process.env.PULSE_CRON_SECRET || "digitra-pulse-2026";
 
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
         // Only save if relevance >= 5
         if (summary.relevanceScore < 5) continue;
 
-        await prisma.curatedItem.create({
+        const created = await prisma.curatedItem.create({
           data: {
             title: item.title,
             sourceUrl: item.link,
@@ -60,6 +61,11 @@ export async function POST(req: NextRequest) {
             categoryId: CATEGORY_MAP[summary.suggestedCategory] || CATEGORY_MAP.noticias,
             publishedAt: new Date(item.pubDate),
           },
+        });
+        // Generate slug with ID for uniqueness
+        await prisma.curatedItem.update({
+          where: { id: created.id },
+          data: { slug: `${slugify(item.title)}-${created.id}` },
         });
         saved++;
       } catch (err) {

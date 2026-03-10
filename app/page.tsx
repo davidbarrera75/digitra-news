@@ -155,6 +155,7 @@ export default async function HomePage() {
       <SectorNews items={curatedItems.map((item) => ({
         id: item.id,
         title: item.title,
+        slug: item.slug ?? null,
         sourceName: item.sourceName,
         sourceUrl: item.sourceUrl,
         aiSummary: item.aiSummary,

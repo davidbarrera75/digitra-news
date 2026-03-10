@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 
 interface NewsItem {
   id: number;
   title: string;
+  slug: string | null;
   sourceName: string;
   sourceUrl: string;
   aiSummary: string | null;
@@ -26,29 +28,54 @@ export default function SectorNews({ items }: { items: NewsItem[] }) {
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filtered.map((item) => (
-          <a
-            key={item.id}
-            href={item.sourceUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group block p-4 rounded-xl border border-border hover:border-accent/30 hover:shadow-sm transition-all"
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-[10px] font-medium text-accent uppercase tracking-wider">
-                {item.sourceName}
-              </span>
-              <span className="text-gray-300">·</span>
-              <span className="text-[10px] text-gray-400">
-                {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: es })}
-              </span>
-            </div>
-            <h3 className="text-sm font-semibold text-primary group-hover:text-accent transition-colors line-clamp-2">
-              {item.aiSummary}
-            </h3>
-            <p className="mt-1.5 text-xs text-gray-400 line-clamp-1">{item.title}</p>
-          </a>
-        ))}
+        {filtered.map((item) => {
+          const href = item.slug ? `/noticias/${item.slug}` : item.sourceUrl;
+          const isInternal = !!item.slug;
+
+          return isInternal ? (
+            <Link
+              key={item.id}
+              href={href}
+              className="group block p-4 rounded-xl border border-border hover:border-accent/30 hover:shadow-sm transition-all"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-medium text-accent uppercase tracking-wider">
+                  {item.sourceName}
+                </span>
+                <span className="text-gray-300">·</span>
+                <span className="text-[10px] text-gray-400">
+                  {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: es })}
+                </span>
+              </div>
+              <h3 className="text-sm font-semibold text-primary group-hover:text-accent transition-colors line-clamp-2">
+                {item.aiSummary}
+              </h3>
+              <p className="mt-1.5 text-xs text-gray-400 line-clamp-1">{item.title}</p>
+            </Link>
+          ) : (
+            <a
+              key={item.id}
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group block p-4 rounded-xl border border-border hover:border-accent/30 hover:shadow-sm transition-all"
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-medium text-accent uppercase tracking-wider">
+                  {item.sourceName}
+                </span>
+                <span className="text-gray-300">·</span>
+                <span className="text-[10px] text-gray-400">
+                  {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true, locale: es })}
+                </span>
+              </div>
+              <h3 className="text-sm font-semibold text-primary group-hover:text-accent transition-colors line-clamp-2">
+                {item.aiSummary}
+              </h3>
+              <p className="mt-1.5 text-xs text-gray-400 line-clamp-1">{item.title}</p>
+            </a>
+          );
+        })}
       </div>
     </section>
   );

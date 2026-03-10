@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { SITE_URL } from "@/lib/constants";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [articles, categories, destinations] = await Promise.all([
+  const [articles, categories, destinations, curatedItems] = await Promise.all([
     prisma.article.findMany({
       where: { status: "published" },
       select: { slug: true, updatedAt: true, category: { select: { slug: true } } },
@@ -18,6 +18,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     prisma.destination.findMany({
       where: { isActive: true },
       select: { slug: true },
+    }),
+    prisma.curatedItem.findMany({
+      where: { slug: { not: null }, relevanceScore: { gte: 5 } },
+      select: { slug: true, createdAt: true },
+      orderBy: { createdAt: "desc" },
     }),
   ]);
 
@@ -54,5 +59,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...categoryPages, ...destinationPages, ...pulsePages, ...articlePages];
+  const curatedPages: MetadataRoute.Sitemap = curatedItems
+    .filter((item) => item.slug)
+    .map((item) => ({
+      url: `${SITE_URL}/noticias/${item.slug}`,
+      lastModified: item.createdAt,
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+
+  return [...staticPages, ...categoryPages, ...destinationPages, ...pulsePages, ...articlePages, ...curatedPages];
 }

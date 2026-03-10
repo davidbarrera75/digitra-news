@@ -29,7 +29,9 @@ export default function NewArticlePage() {
   const [coverImageAlt, setCoverImageAlt] = useState("");
   const [status, setStatus] = useState("draft");
   const [isFeatured, setIsFeatured] = useState(false);
+  const [faqItems, setFaqItems] = useState<{ question: string; answer: string }[]>([]);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -56,6 +58,48 @@ export default function NewArticlePage() {
   const estimateReadingTime = (text: string) => {
     const words = text.split(/\s+/).length;
     return Math.max(1, Math.ceil(words / 200));
+  };
+
+  const handleMdUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    setError("");
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch("/api/articles/parse-md", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Error al procesar");
+      }
+
+      const parsed = await res.json();
+
+      setTitle(parsed.title || "");
+      setSlug(parsed.slug || "");
+      setSlugManual(!!parsed.slug);
+      setContent(parsed.content || "");
+      setExcerpt(parsed.excerpt || "");
+      setMetaTitle(parsed.metaTitle || "");
+      setMetaDescription(parsed.metaDescription || "");
+      setSeoKeyword(parsed.seoKeyword || "");
+      setTagsInput(parsed.keywords?.join(", ") || "");
+      setFaqItems(parsed.faqItems || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error al subir archivo");
+    } finally {
+      setUploading(false);
+      // Reset file input
+      e.target.value = "";
+    }
   };
 
   const handleSave = async () => {
@@ -88,6 +132,7 @@ export default function NewArticlePage() {
         readingTime: estimateReadingTime(content),
         status,
         isFeatured,
+        faqItems: faqItems.length > 0 ? JSON.stringify(faqItems) : undefined,
       });
 
       router.push("/admin/articles");
@@ -100,7 +145,22 @@ export default function NewArticlePage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-display font-bold text-primary">Nuevo Artículo</h1>
+        <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-display font-bold text-primary">Nuevo Artículo</h1>
+          <label className="relative cursor-pointer">
+            <input
+              type="file"
+              accept=".md"
+              onChange={handleMdUpload}
+              className="hidden"
+              disabled={uploading}
+            />
+            <span className={`inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium rounded-lg border-2 border-dashed transition-colors ${uploading ? "border-gray-200 text-gray-400" : "border-accent/40 text-accent hover:bg-accent/5 hover:border-accent"}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              {uploading ? "Procesando..." : "Subir .md"}
+            </span>
+          </label>
+        </div>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-sm text-gray-500">
             <input
@@ -281,6 +341,24 @@ export default function NewArticlePage() {
             />
             <p className="text-[10px] text-gray-400 mt-1">Separar con comas</p>
           </div>
+
+          {faqItems.length > 0 && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <h3 className="text-sm font-semibold text-primary mb-3">
+                FAQ ({faqItems.length} preguntas)
+              </h3>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {faqItems.map((faq, i) => (
+                  <details key={i} className="text-xs">
+                    <summary className="cursor-pointer font-medium text-gray-700 hover:text-accent">
+                      {faq.question}
+                    </summary>
+                    <p className="mt-1 text-gray-500 pl-3">{faq.answer.substring(0, 150)}...</p>
+                  </details>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

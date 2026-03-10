@@ -151,6 +151,7 @@ model CuratedSource {
 model CuratedItem {
   id                Int       @id @default(autoincrement())
   title             String    @db.VarChar(500)
+  slug              String?   @unique @db.VarChar(300)
   sourceUrl         String    @map("source_url") @db.VarChar(500)
   sourceName        String    @map("source_name") @db.VarChar(200)
   sourceId          Int?      @map("source_id")

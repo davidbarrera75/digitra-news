@@ -52,3 +52,49 @@ export async function getLatestCuratedItems(limit = 4) {
     take: limit,
   });
 }
+
+export async function getCuratedItemBySlug(slug: string) {
+  // Try exact match first
+  const item = await prisma.curatedItem.findUnique({
+    where: { slug },
+    include: { source: true, category: true },
+  });
+  if (item) return item;
+
+  // Fallback: try matching without trailing number (for Google-indexed URLs like slug-705582)
+  const withoutTrailingNum = slug.replace(/-\d+$/, "");
+  if (withoutTrailingNum !== slug) {
+    const fuzzy = await prisma.curatedItem.findFirst({
+      where: {
+        slug: { startsWith: withoutTrailingNum },
+        relevanceScore: { gte: 5 },
+      },
+      include: { source: true, category: true },
+    });
+    if (fuzzy) return fuzzy;
+  }
+
+  return null;
+}
+
+export async function getRelatedCuratedItems(currentId: number, limit = 4) {
+  return prisma.curatedItem.findMany({
+    where: {
+      id: { not: currentId },
+      relevanceScore: { gte: 5 },
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  });
+}
+
+export async function getAllCuratedItemSlugs() {
+  return prisma.curatedItem.findMany({
+    where: {
+      slug: { not: null },
+      relevanceScore: { gte: 5 },
+    },
+    select: { slug: true, createdAt: true },
+    orderBy: { createdAt: "desc" },
+  });
+}
