@@ -21,12 +21,18 @@ export async function GET() {
         avgPrice?: number;
         currency?: string;
       } | null;
+      const weather = snapshot.weatherData as {
+        temp?: number;
+        icon?: string;
+      } | null;
       items.push({
         name: snapshot.destination.name,
         slug: snapshot.destination.slug,
         score: snapshot.score,
         avgPrice: accommodation?.avgPrice ?? null,
         currency: accommodation?.currency ?? "USD",
+        temp: weather?.temp ?? null,
+        weatherIcon: weather?.icon ?? null,
       });
     }
   }
