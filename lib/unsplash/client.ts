@@ -115,9 +115,13 @@ export function titleToSearchQuery(title: string): string {
     { pattern: /aventura|naturaleza|senderismo/i, term: "nature adventure" },
     { pattern: /barrio|hospeda/i, term: "neighborhood street" },
     { pattern: /airbnb|alojamiento|hotel/i, term: "accommodation" },
-    { pattern: /turismo|viaj/i, term: "tourism travel" },
-    { pattern: /precio|costo/i, term: "city skyline" },
+    { pattern: /turismo|viaj|turíst/i, term: "tourism travel" },
+    { pattern: /precio|costo|econom/i, term: "city skyline" },
     { pattern: /tendencia/i, term: "travel" },
+    { pattern: /vuelo|aero|avión|ruta.*aér|aerolínea/i, term: "airplane airport" },
+    { pattern: /hotel|alojamiento|hospedaje/i, term: "hotel resort" },
+    { pattern: /petróleo|energía|mercado/i, term: "business economy" },
+    { pattern: /gobierno|política|ley/i, term: "government building" },
   ];
 
   const foundTopic = topics.find((t) => t.pattern.test(title));

@@ -44,6 +44,13 @@ export default async function HomePage() {
       if (photo) {
         coverImage = photo.url;
         coverImageAlt = photo.alt;
+      } else {
+        // Fallback: generic tourism photo
+        const fallback = await searchPhoto("colombia tourism landscape");
+        if (fallback) {
+          coverImage = fallback.url;
+          coverImageAlt = fallback.alt;
+        }
       }
     } catch {}
     curatedHero = {
