@@ -11,23 +11,45 @@ import { getPublishedArticles, getFeaturedArticle } from "@/lib/actions/articles
 import { getDestinations } from "@/lib/actions/destinations";
 import { getCategories } from "@/lib/actions/categories";
 import { getLatestPulses } from "@/lib/actions/pulse";
-import { getLatestCuratedItems } from "@/lib/actions/curated";
+import { getLatestCuratedItems, getTopCuratedItem } from "@/lib/actions/curated";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
 export default async function HomePage() {
-  const [articles, featured, destinations, categories, pulses, curatedItems] = await Promise.all([
+  const [articles, featured, destinations, categories, pulses, curatedItems, topCurated] = await Promise.all([
     getPublishedArticles(10),
     getFeaturedArticle(),
     getDestinations(),
     getCategories(),
     getLatestPulses(),
     getLatestCuratedItems(4),
+    getTopCuratedItem(),
   ]);
 
-  const hero = featured || articles[0];
-  const secondary = articles.filter((a) => a.id !== hero?.id).slice(0, 4);
-  const hasContent = articles.length > 0;
+  // Use curated item as hero if the latest article is not from today
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const latestArticle = featured || articles[0];
+  const articleIsFromToday = latestArticle?.publishedAt && new Date(latestArticle.publishedAt) >= today;
+
+  const curatedHero = !articleIsFromToday && topCurated
+    ? {
+        id: `curated-${topCurated.id}`,
+        title: topCurated.aiSummary || topCurated.title,
+        excerpt: topCurated.title,
+        slug: topCurated.slug,
+        coverImage: null as string | null,
+        coverImageAlt: null as string | null,
+        category: topCurated.category || { name: "Noticias", slug: "noticias", color: "#EF4444" },
+        publishedAt: topCurated.createdAt,
+        readingTime: 3,
+        _isCurated: true,
+      }
+    : null;
+
+  const hero = curatedHero || latestArticle;
+  const secondary = articles.filter((a) => a.id !== latestArticle?.id).slice(0, 4);
+  const hasContent = articles.length > 0 || !!curatedHero;
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,7 +59,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <Link
-                href={hero.category ? `/${hero.category.slug}/${hero.slug}` : `/${hero.slug}`}
+                href={'_isCurated' in hero && hero.slug ? `/noticias/${hero.slug}` : hero.category ? `/${hero.category.slug}/${hero.slug}` : `/${hero.slug}`}
                 className="group block"
               >
                 <div className="relative aspect-[16/9] rounded-2xl overflow-hidden bg-gradient-to-br from-accent/20 to-secondary/20 mb-4">

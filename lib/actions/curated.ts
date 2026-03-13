@@ -53,6 +53,14 @@ export async function getLatestCuratedItems(limit = 4) {
   });
 }
 
+export async function getTopCuratedItem() {
+  return prisma.curatedItem.findFirst({
+    where: { relevanceScore: { gte: 5 }, aiSummary: { not: null } },
+    orderBy: [{ relevanceScore: "desc" }, { createdAt: "desc" }],
+    include: { category: true },
+  });
+}
+
 export async function getCuratedItemBySlug(slug: string) {
   // Try exact match first
   const item = await prisma.curatedItem.findUnique({
