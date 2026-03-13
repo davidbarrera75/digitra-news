@@ -8,6 +8,7 @@ import CategoryPill from "@/components/ui/CategoryPill";
 import PulseToday from "@/components/home/PulseToday";
 import SectorNews from "@/components/home/SectorNews";
 import { getPublishedArticles, getFeaturedArticle } from "@/lib/actions/articles";
+import { searchPhoto, titleToSearchQuery } from "@/lib/unsplash/client";
 import { getDestinations } from "@/lib/actions/destinations";
 import { getCategories } from "@/lib/actions/categories";
 import { getLatestPulses } from "@/lib/actions/pulse";
@@ -32,20 +33,32 @@ export default async function HomePage() {
   const latestArticle = featured || articles[0];
   const articleIsFromToday = latestArticle?.publishedAt && new Date(latestArticle.publishedAt) >= today;
 
-  const curatedHero = !articleIsFromToday && topCurated
-    ? {
-        id: `curated-${topCurated.id}`,
-        title: topCurated.aiSummary || topCurated.title,
-        excerpt: topCurated.title,
-        slug: topCurated.slug,
-        coverImage: null as string | null,
-        coverImageAlt: null as string | null,
-        category: topCurated.category || { name: "Noticias", slug: "noticias", color: "#EF4444" },
-        publishedAt: topCurated.createdAt,
-        readingTime: 3,
-        _isCurated: true,
+  let curatedHero = null;
+  if (!articleIsFromToday && topCurated) {
+    const heroTitle = topCurated.aiSummary || topCurated.title;
+    let coverImage: string | null = null;
+    let coverImageAlt: string | null = null;
+    try {
+      const query = titleToSearchQuery(heroTitle);
+      const photo = await searchPhoto(query);
+      if (photo) {
+        coverImage = photo.url;
+        coverImageAlt = photo.alt;
       }
-    : null;
+    } catch {}
+    curatedHero = {
+      id: `curated-${topCurated.id}`,
+      title: heroTitle,
+      excerpt: topCurated.title,
+      slug: topCurated.slug,
+      coverImage,
+      coverImageAlt,
+      category: topCurated.category || { name: "Noticias", slug: "noticias", color: "#EF4444" },
+      publishedAt: topCurated.createdAt,
+      readingTime: 3,
+      _isCurated: true,
+    };
+  }
 
   const hero = curatedHero || latestArticle;
   const secondary = articles.filter((a) => a.id !== latestArticle?.id).slice(0, 4);
