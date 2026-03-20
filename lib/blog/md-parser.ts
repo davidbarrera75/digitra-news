@@ -31,38 +31,64 @@ interface ParsedArticle {
  * Answer text...
  */
 export function parseMdArticle(markdown: string): ParsedArticle {
-  const lines = markdown.split("\n");
+  // Check for YAML frontmatter (starts with ---)
+  const frontmatter = extractFrontmatter(markdown);
+  let bodyAfterFrontmatter = markdown;
 
-  // Extract title from first H1
-  let title = "";
-  for (const line of lines) {
-    if (line.startsWith("# ")) {
-      title = line.replace(/^#\s+/, "").trim();
-      break;
+  if (frontmatter) {
+    // Remove the entire frontmatter block from content
+    bodyAfterFrontmatter = markdown.replace(/^---\n[\s\S]*?\n---\n?/, "");
+  }
+
+  const lines = bodyAfterFrontmatter.split("\n");
+
+  // Extract title from frontmatter or first H1
+  let title = (frontmatter?.title as string) || "";
+  if (!title) {
+    for (const line of lines) {
+      if (line.startsWith("# ")) {
+        title = line.replace(/^#\s+/, "").trim();
+        break;
+      }
     }
   }
 
-  // Extract SEO metadata from HTML comments
-  const metaTitle = extractComment(markdown, "Title tag sugerido") || title;
-  const metaDescription = extractComment(markdown, "Meta description");
-  const slug = extractComment(markdown, "Slug") || slugify(title);
+  // Extract SEO metadata from frontmatter first, then fall back to HTML comments
+  const metaTitle =
+    (frontmatter?.og_title as string) ||
+    (frontmatter?.title as string) ||
+    extractComment(markdown, "Title tag sugerido") ||
+    title;
+  const metaDescription =
+    (frontmatter?.description as string) ||
+    (frontmatter?.og_description as string) ||
+    extractComment(markdown, "Meta description");
+  const slug =
+    (frontmatter?.slug as string) ||
+    extractComment(markdown, "Slug") ||
+    slugify(title);
   const primaryKeywords = extractComment(markdown, "Keywords primarios");
   const secondaryKeywords = extractComment(markdown, "Keywords secundarios");
 
-  // Combine keywords for tags
-  const keywords = [
-    ...splitKeywords(primaryKeywords),
-    ...splitKeywords(secondaryKeywords),
-  ];
+  // Combine keywords from frontmatter tags or HTML comments
+  let keywords: string[] = [];
+  if (frontmatter?.tags && Array.isArray(frontmatter.tags)) {
+    keywords = frontmatter.tags;
+  } else {
+    keywords = [
+      ...splitKeywords(primaryKeywords),
+      ...splitKeywords(secondaryKeywords),
+    ];
+  }
 
   // Get the first SEO keyword
-  const seoKeyword = splitKeywords(primaryKeywords)[0] || "";
+  const seoKeyword = keywords[0] || splitKeywords(primaryKeywords)[0] || "";
 
   // Extract FAQ items
-  const faqItems = extractFaq(markdown);
+  const faqItems = extractFaq(bodyAfterFrontmatter);
 
   // Remove the H1, SEO comments, and first separator to get body content
-  let bodyMd = markdown;
+  let bodyMd = bodyAfterFrontmatter;
   // Remove H1 line
   bodyMd = bodyMd.replace(/^#\s+.+\n/, "");
   // Remove all HTML comments
@@ -159,6 +185,44 @@ function extractExcerpt(markdown: string): string {
     .replace(/`(.+?)`/g, "$1");
 
   return paragraph.substring(0, 500);
+}
+
+function extractFrontmatter(
+  markdown: string
+): Record<string, string | string[]> | null {
+  const match = markdown.match(/^---\n([\s\S]*?)\n---/);
+  if (!match) return null;
+
+  const yaml = match[1];
+  const data: Record<string, string | string[]> = {};
+
+  for (const line of yaml.split("\n")) {
+    // Skip array items (handled below) and empty lines
+    if (line.startsWith("  -") || line.startsWith("- ") || !line.trim())
+      continue;
+
+    const colonIdx = line.indexOf(":");
+    if (colonIdx === -1) continue;
+
+    const key = line.substring(0, colonIdx).trim();
+    let value = line.substring(colonIdx + 1).trim();
+
+    // Remove surrounding quotes
+    value = value.replace(/^["'](.*)["']$/, "$1");
+
+    data[key] = value;
+  }
+
+  // Parse tags array: tags: ["a", "b", "c"]
+  const tagsMatch = yaml.match(/tags:\s*\[([\s\S]*?)\]/);
+  if (tagsMatch) {
+    data.tags = tagsMatch[1]
+      .split(",")
+      .map((t) => t.trim().replace(/^["']|["']$/g, ""))
+      .filter(Boolean);
+  }
+
+  return Object.keys(data).length > 0 ? data : null;
 }
 
 function slugify(text: string): string {
