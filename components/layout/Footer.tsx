@@ -64,6 +64,16 @@ export default function Footer() {
                   Newsletter
                 </Link>
               </li>
+              <li>
+                <Link href="/acerca" className="text-gray-400 hover:text-white text-sm transition-colors">
+                  Acerca de
+                </Link>
+              </li>
+              <li>
+                <Link href="/contacto" className="text-gray-400 hover:text-white text-sm transition-colors">
+                  Contacto
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -79,8 +89,21 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-white/10 text-center text-gray-500 text-xs">
-          &copy; {new Date().getFullYear()} {SITE_NAME}. Todos los derechos reservados.
+        <div className="mt-10 pt-6 border-t border-white/10 space-y-3">
+          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
+            <Link href="/privacidad" className="text-gray-500 hover:text-gray-300 transition-colors">
+              Privacidad
+            </Link>
+            <Link href="/terminos" className="text-gray-500 hover:text-gray-300 transition-colors">
+              T&eacute;rminos y Condiciones
+            </Link>
+            <Link href="/politica-editorial" className="text-gray-500 hover:text-gray-300 transition-colors">
+              Pol&iacute;tica Editorial
+            </Link>
+          </div>
+          <p className="text-center text-gray-500 text-xs">
+            &copy; {new Date().getFullYear()} {SITE_NAME}. Todos los derechos reservados.
+          </p>
         </div>
       </div>
     </footer>

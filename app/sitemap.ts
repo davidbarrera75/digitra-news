@@ -31,6 +31,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/pulse`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
     { url: `${SITE_URL}/buscar`, changeFrequency: "weekly", priority: 0.3 },
     { url: `${SITE_URL}/newsletter`, changeFrequency: "monthly", priority: 0.3 },
+    { url: `${SITE_URL}/acerca`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${SITE_URL}/contacto`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${SITE_URL}/privacidad`, changeFrequency: "monthly", priority: 0.2 },
+    { url: `${SITE_URL}/terminos`, changeFrequency: "monthly", priority: 0.2 },
+    { url: `${SITE_URL}/politica-editorial`, changeFrequency: "monthly", priority: 0.2 },
   ];
 
   const categoryPages: MetadataRoute.Sitemap = categories.map((cat) => ({
