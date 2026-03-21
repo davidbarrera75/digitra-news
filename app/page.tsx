@@ -35,7 +35,8 @@ export default async function HomePage() {
 
   let curatedHero = null;
   if (!articleIsFromToday && topCurated) {
-    const heroTitle = topCurated.aiSummary || topCurated.title;
+    const rawTitle = topCurated.aiSummary || topCurated.title;
+    const heroTitle = rawTitle.length > 120 ? rawTitle.slice(0, 117).replace(/\s+\S*$/, '') + '…' : rawTitle;
     let coverImage: string | null = null;
     let coverImageAlt: string | null = null;
     try {
@@ -95,7 +96,7 @@ export default async function HomePage() {
                     {hero.category && (
                       <CategoryPill name={hero.category.name} color={hero.category.color || "#0EA5E9"} />
                     )}
-                    <h1 className="mt-3 text-2xl md:text-4xl font-display font-bold text-white leading-tight">
+                    <h1 className="mt-3 text-2xl md:text-4xl font-display font-bold text-white leading-tight line-clamp-3">
                       {hero.title}
                     </h1>
                     {hero.excerpt && (
