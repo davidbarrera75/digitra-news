@@ -8,6 +8,7 @@ import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import CategoryPill from "@/components/ui/CategoryPill";
 import RentalsCTA from "@/components/cta/RentalsCTA";
 import ArticleCard from "@/components/articles/ArticleCard";
+import ShareButton from "@/components/articles/ShareButton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 
@@ -90,12 +91,18 @@ export default async function ArticlePage({ params }: Props) {
               {article.subtitle && (
                 <p className="mt-3 text-xl text-gray-500">{article.subtitle}</p>
               )}
-              <div className="mt-4 flex items-center gap-4 text-sm text-gray-400">
-                <span>Por David Barrera</span>
-                <span>·</span>
-                {article.publishedAt && (
-                  <time>{format(new Date(article.publishedAt), "d MMMM yyyy", { locale: es })}</time>
-                )}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <span>Por David Barrera</span>
+                  <span>·</span>
+                  {article.publishedAt && (
+                    <time>{format(new Date(article.publishedAt), "d MMMM yyyy", { locale: es })}</time>
+                  )}
+                </div>
+                <ShareButton
+                  url={`${SITE_URL}/${category}/${slug}`}
+                  title={article.title}
+                />
               </div>
             </header>
 

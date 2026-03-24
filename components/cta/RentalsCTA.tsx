@@ -14,7 +14,7 @@ export default function RentalsCTA({ variant = "banner", articleId }: RentalsCTA
           articleId,
           ctaType: variant,
           ctaText: "Crea tu página gratis",
-          destinationUrl: "https://digitra.rentals",
+          destinationUrl: "https://digitra.rentals/anfitriones",
         }),
       });
     }
@@ -30,7 +30,7 @@ export default function RentalsCTA({ variant = "banner", articleId }: RentalsCTA
           Crea tu página de reservas con IA y recibe huéspedes directos.
         </p>
         <a
-          href="https://digitra.rentals"
+          href="https://digitra.rentals/anfitriones"
           target="_blank"
           rel="noopener noreferrer"
           onClick={handleClick}
@@ -48,7 +48,7 @@ export default function RentalsCTA({ variant = "banner", articleId }: RentalsCTA
         <p className="text-sm text-body">
           <strong>¿Eres anfitrión?</strong>{" "}
           <a
-            href="https://digitra.rentals"
+            href="https://digitra.rentals/anfitriones"
             target="_blank"
             rel="noopener noreferrer"
             onClick={handleClick}
@@ -70,7 +70,7 @@ export default function RentalsCTA({ variant = "banner", articleId }: RentalsCTA
         Crea tu página de reservas con inteligencia artificial y recibe huéspedes directos. Sin comisiones.
       </p>
       <a
-        href="https://digitra.rentals"
+        href="https://digitra.rentals/anfitriones"
         target="_blank"
         rel="noopener noreferrer"
         onClick={handleClick}

@@ -97,7 +97,7 @@ export default async function PulsePage() {
             Crea tu pagina de reservas gratis y aparece en el Pulse de tu ciudad.
           </p>
           <a
-            href="https://digitra.rentals"
+            href="https://digitra.rentals/anfitriones"
             target="_blank"
             rel="noopener"
             className="inline-block px-6 py-3 bg-accent text-white rounded-lg font-medium hover:bg-accent/90 transition-colors"
