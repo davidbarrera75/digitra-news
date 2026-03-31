@@ -1,10 +1,21 @@
 "use client";
 
-import Link from "next/link";
-import { NAV_LINKS, SITE_NAME } from "@/lib/constants";
+import { SITE_NAME } from "@/lib/constants";
+import { useLocale } from "@/lib/i18n/LocaleProvider";
+import LocalizedLink from "@/components/LocalizedLink";
 import FooterNewsletter from "./FooterNewsletter";
 
+const NAV_KEYS: { key: string; href: string }[] = [
+  { key: "nav.destinations", href: "/destinos" },
+  { key: "nav.data", href: "/datos" },
+  { key: "nav.trends", href: "/tendencias" },
+  { key: "nav.rental", href: "/alquiler-vacacional" },
+  { key: "nav.news", href: "/noticias" },
+];
+
 export default function Footer() {
+  const { t } = useLocale();
+
   return (
     <footer className="bg-primary text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -15,24 +26,24 @@ export default function Footer() {
               {SITE_NAME}
             </h3>
             <p className="text-gray-400 text-sm leading-relaxed">
-              El primer medio turístico basado en datos de Latinoamérica.
+              {t("footer.brand")}
             </p>
           </div>
 
           {/* Categories */}
           <div>
             <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4 font-body">
-              Secciones
+              {t("footer.sections")}
             </h4>
             <ul className="space-y-2">
-              {NAV_LINKS.map((link) => (
+              {NAV_KEYS.map((link) => (
                 <li key={link.href}>
-                  <Link
+                  <LocalizedLink
                     href={link.href}
                     className="text-gray-400 hover:text-white text-sm transition-colors"
                   >
-                    {link.label}
-                  </Link>
+                    {t(link.key)}
+                  </LocalizedLink>
                 </li>
               ))}
             </ul>
@@ -41,7 +52,7 @@ export default function Footer() {
           {/* Digitra */}
           <div>
             <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4 font-body">
-              Digitra
+              {t("footer.digitra")}
             </h4>
             <ul className="space-y-2">
               <li>
@@ -55,24 +66,24 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <Link href="/pulse" className="text-gray-400 hover:text-white text-sm transition-colors">
+                <LocalizedLink href="/pulse" className="text-gray-400 hover:text-white text-sm transition-colors">
                   Pulse
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/newsletter" className="text-gray-400 hover:text-white text-sm transition-colors">
+                <LocalizedLink href="/newsletter" className="text-gray-400 hover:text-white text-sm transition-colors">
                   Newsletter
-                </Link>
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/acerca" className="text-gray-400 hover:text-white text-sm transition-colors">
-                  Acerca de
-                </Link>
+                <LocalizedLink href="/acerca" className="text-gray-400 hover:text-white text-sm transition-colors">
+                  {t("nav.about")}
+                </LocalizedLink>
               </li>
               <li>
-                <Link href="/contacto" className="text-gray-400 hover:text-white text-sm transition-colors">
-                  Contacto
-                </Link>
+                <LocalizedLink href="/contacto" className="text-gray-400 hover:text-white text-sm transition-colors">
+                  {t("nav.contact")}
+                </LocalizedLink>
               </li>
             </ul>
           </div>
@@ -80,10 +91,10 @@ export default function Footer() {
           {/* Newsletter mini */}
           <div>
             <h4 className="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4 font-body">
-              Newsletter
+              {t("footer.newsletter")}
             </h4>
             <p className="text-gray-400 text-sm mb-3">
-              Datos y tendencias del turismo en LATAM, cada semana.
+              {t("footer.newsletterText")}
             </p>
             <FooterNewsletter />
           </div>
@@ -91,18 +102,18 @@ export default function Footer() {
 
         <div className="mt-10 pt-6 border-t border-white/10 space-y-3">
           <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs">
-            <Link href="/privacidad" className="text-gray-500 hover:text-gray-300 transition-colors">
-              Privacidad
-            </Link>
-            <Link href="/terminos" className="text-gray-500 hover:text-gray-300 transition-colors">
-              T&eacute;rminos y Condiciones
-            </Link>
-            <Link href="/politica-editorial" className="text-gray-500 hover:text-gray-300 transition-colors">
-              Pol&iacute;tica Editorial
-            </Link>
+            <LocalizedLink href="/privacidad" className="text-gray-500 hover:text-gray-300 transition-colors">
+              {t("footer.privacy")}
+            </LocalizedLink>
+            <LocalizedLink href="/terminos" className="text-gray-500 hover:text-gray-300 transition-colors">
+              {t("footer.terms")}
+            </LocalizedLink>
+            <LocalizedLink href="/politica-editorial" className="text-gray-500 hover:text-gray-300 transition-colors">
+              {t("footer.editorial")}
+            </LocalizedLink>
           </div>
           <p className="text-center text-gray-500 text-xs">
-            &copy; {new Date().getFullYear()} {SITE_NAME}. Todos los derechos reservados.
+            &copy; {new Date().getFullYear()} {SITE_NAME}. {t("footer.rights")}.
           </p>
         </div>
       </div>

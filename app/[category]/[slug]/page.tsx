@@ -11,28 +11,38 @@ import ArticleCard from "@/components/articles/ArticleCard";
 import ShareButton from "@/components/articles/ShareButton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-
+import { getServerLocale } from "@/lib/i18n/server";
+import { getAlternates } from "@/lib/i18n/alternates";
+import { localized, formatDateByLocale } from "@/lib/i18n/content";
 interface Props {
   params: Promise<{ category: string; slug: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { slug, category } = await params;
   const article = await getArticleBySlug(slug);
   if (!article) return {};
 
+  const locale = await getServerLocale();
+  const title = localized(article, 'metaTitle', locale) || localized(article, 'title', locale);
+  const description = localized(article, 'metaDescription', locale) || localized(article, 'excerpt', locale) || undefined;
+  const alternates = article.titleEn
+    ? await getAlternates(`/${category}/${slug}`)
+    : undefined;
+
   return {
-    title: article.metaTitle || article.title,
-    description: article.metaDescription || article.excerpt || undefined,
+    title,
+    description,
     openGraph: {
-      title: article.metaTitle || article.title,
-      description: article.metaDescription || article.excerpt || undefined,
+      title,
+      description,
       type: "article",
       publishedTime: article.publishedAt?.toISOString(),
       images: article.ogImage || article.coverImage ? [{ url: article.ogImage || article.coverImage! }] : undefined,
     },
     alternates: {
       canonical: article.canonicalUrl || `${SITE_URL}/${article.category?.slug}/${article.slug}`,
+      ...(alternates ? { languages: alternates.languages } : {}),
     },
   };
 }
@@ -45,22 +55,43 @@ export default async function ArticlePage({ params }: Props) {
     notFound();
   }
 
+  const locale = await getServerLocale();
+
   const related = article.category
     ? (await getArticlesByCategory(article.category.slug, 4)).filter((a) => a.id !== article.id).slice(0, 3)
     : [];
 
+  const displayTitle = localized(article, 'title', locale);
+  const displaySubtitle = localized(article, 'subtitle', locale);
+  const displayContent = localized(article, 'content', locale);
+  const displayExcerpt = localized(article, 'excerpt', locale);
+  const displayAlt = localized(article, 'coverImageAlt', locale) || displayTitle;
+  const cat = article.category;
+  const categoryName = cat
+    ? (locale === 'en' && cat.nameEn ? cat.nameEn : cat.name)
+    : category;
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
-    headline: article.title,
-    description: article.excerpt,
+    headline: displayTitle,
+    description: displayExcerpt,
     author: { "@type": "Person", name: "David Barrera" },
     publisher: { "@type": "Organization", name: SITE_NAME },
     datePublished: article.publishedAt?.toISOString(),
     dateModified: article.updatedAt.toISOString(),
     image: article.coverImage || undefined,
+    inLanguage: locale,
     mainEntityOfPage: `${SITE_URL}/${category}/${slug}`,
   };
+
+  const readingTimeLabel = locale === 'en'
+    ? `${article.readingTime} min read`
+    : `${article.readingTime} min lectura`;
+
+  const publishedLabel = locale === 'en' ? 'By David Barrera' : 'Por David Barrera';
+  const sourceLabel = locale === 'en' ? 'Original source:' : 'Fuente original:';
+  const relatedLabel = locale === 'en' ? 'Related articles' : 'Artículos relacionados';
 
   return (
     <>
@@ -71,7 +102,7 @@ export default async function ArticlePage({ params }: Props) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-6">
           <Link href={`/${category}`} className="text-sm text-accent hover:underline">
-            ← {article.category?.name || category}
+            ← {categoryName}
           </Link>
         </div>
 
@@ -81,27 +112,31 @@ export default async function ArticlePage({ params }: Props) {
             <header className="mb-8">
               {article.category && (
                 <div className="flex items-center gap-3 mb-4">
-                  <CategoryPill name={article.category.name} color={article.category.color || "#0EA5E9"} />
-                  <span className="text-xs text-gray-400">{article.readingTime} min lectura</span>
+                  <CategoryPill name={categoryName} color={article.category.color || "#0EA5E9"} />
+                  <span className="text-xs text-gray-400">{readingTimeLabel}</span>
                 </div>
               )}
               <h1 className="text-3xl md:text-5xl font-display font-bold text-primary leading-tight">
-                {article.title}
+                {displayTitle}
               </h1>
-              {article.subtitle && (
-                <p className="mt-3 text-xl text-gray-500">{article.subtitle}</p>
+              {displaySubtitle && (
+                <p className="mt-3 text-xl text-gray-500">{displaySubtitle}</p>
               )}
               <div className="mt-4 flex items-center justify-between">
                 <div className="flex items-center gap-4 text-sm text-gray-400">
-                  <span>Por David Barrera</span>
+                  <span>{publishedLabel}</span>
                   <span>·</span>
                   {article.publishedAt && (
-                    <time>{format(new Date(article.publishedAt), "d MMMM yyyy", { locale: es })}</time>
+                    <time>
+                      {locale === 'en'
+                        ? formatDateByLocale(new Date(article.publishedAt), 'en')
+                        : format(new Date(article.publishedAt), "d MMMM yyyy", { locale: es })}
+                    </time>
                   )}
                 </div>
                 <ShareButton
                   url={`${SITE_URL}/${category}/${slug}`}
-                  title={article.title}
+                  title={displayTitle}
                 />
               </div>
             </header>
@@ -111,7 +146,7 @@ export default async function ArticlePage({ params }: Props) {
                 <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-gray-100">
                   <img
                     src={article.coverImage}
-                    alt={article.coverImageAlt || article.title}
+                    alt={displayAlt}
                     className="w-full h-full object-cover"
                   />
                 </div>
@@ -125,13 +160,13 @@ export default async function ArticlePage({ params }: Props) {
 
             <div
               className="article-content"
-              dangerouslySetInnerHTML={{ __html: article.content }}
+              dangerouslySetInnerHTML={{ __html: displayContent }}
             />
 
             {article.sourceType === "curated" && article.sourceUrl && (
               <div className="mt-8 p-4 bg-gray-50 rounded-lg border border-border">
                 <p className="text-sm text-gray-500">
-                  Fuente original:{" "}
+                  {sourceLabel}{" "}
                   <a href={article.sourceUrl} target="_blank" rel="noopener noreferrer" className="text-accent hover:underline">
                     {article.sourceName || article.sourceUrl}
                   </a>
@@ -160,7 +195,7 @@ export default async function ArticlePage({ params }: Props) {
 
             {related.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-primary mb-4">Artículos relacionados</h3>
+                <h3 className="text-sm font-semibold text-primary mb-4">{relatedLabel}</h3>
                 <div className="space-y-4">
                   {related.map((rel) => (
                     <ArticleCard key={rel.id} article={rel} variant="compact" />

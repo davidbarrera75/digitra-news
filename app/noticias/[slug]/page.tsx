@@ -9,6 +9,9 @@ import CategoryPill from "@/components/ui/CategoryPill";
 import RentalsCTA from "@/components/cta/RentalsCTA";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { getServerLocale } from "@/lib/i18n/server";
+import { getAlternates } from "@/lib/i18n/alternates";
+import { localized, formatDateByLocale } from "@/lib/i18n/content";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -19,8 +22,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const item = await getCuratedItemBySlug(slug);
   if (!item) return {};
 
-  const title = item.aiSummary || item.title;
-  const description = item.originalExcerpt || item.aiSummary || item.title;
+  const locale = await getServerLocale();
+  const title = localized(item, 'aiSummary', locale) || localized(item, 'title', locale);
+  const description = item.originalExcerpt || title;
+  const alternates = (item as Record<string, unknown>).titleEn
+    ? await getAlternates(`/noticias/${item.slug}`)
+    : undefined;
 
   return {
     title,
@@ -33,6 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     alternates: {
       canonical: `${SITE_URL}/noticias/${item.slug}`,
+      ...(alternates ? { languages: alternates.languages } : {}),
     },
   };
 }
@@ -43,22 +51,33 @@ export default async function NoticiaPage({ params }: Props) {
 
   if (!item) notFound();
 
-  // Redirect to canonical slug if accessed via non-matching URL
   if (item.slug && item.slug !== slug) {
     const { redirect } = await import("next/navigation");
     redirect(`/noticias/${item.slug}`);
   }
 
+  const locale = await getServerLocale();
   const related = await getRelatedCuratedItems(item.id, 4);
+
+  const displayTitle = localized(item, 'title', locale);
+  const displaySummary = localized(item, 'aiSummary', locale);
+  const headline = displaySummary || displayTitle;
+
+  const newsLabel = locale === 'en' ? 'News' : 'Noticias';
+  const sourceLabel = locale === 'en' ? 'Source:' : 'Fuente:';
+  const readFullLabel = locale === 'en' ? 'Read the full story from the original source:' : 'Lee la noticia completa en la fuente original:';
+  const readAtLabel = locale === 'en' ? `Read at ${item.sourceName}` : `Leer en ${item.sourceName}`;
+  const moreNewsLabel = locale === 'en' ? 'More news' : 'Más noticias';
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
-    headline: item.aiSummary || item.title,
-    description: item.originalExcerpt || item.aiSummary || item.title,
+    headline,
+    description: item.originalExcerpt || headline,
     author: { "@type": "Organization", name: SITE_NAME },
     publisher: { "@type": "Organization", name: SITE_NAME },
     datePublished: (item.publishedAt || item.createdAt).toISOString(),
+    inLanguage: locale,
     mainEntityOfPage: `${SITE_URL}/noticias/${item.slug}`,
   };
 
@@ -71,7 +90,7 @@ export default async function NoticiaPage({ params }: Props) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-6">
           <Link href="/noticias" className="text-sm text-accent hover:underline">
-            ← Noticias
+            ← {newsLabel}
           </Link>
         </div>
 
@@ -80,20 +99,22 @@ export default async function NoticiaPage({ params }: Props) {
           <article className="lg:col-span-2">
             <header className="mb-8">
               <div className="flex items-center gap-3 mb-4">
-                <CategoryPill name="Noticias" color="#EF4444" />
+                <CategoryPill name={newsLabel} color="#EF4444" />
                 <span className="text-xs text-gray-400">{item.sourceName}</span>
               </div>
               <h1 className="text-3xl md:text-5xl font-display font-bold text-primary leading-tight">
-                {item.aiSummary || item.title}
+                {headline}
               </h1>
-              {item.aiSummary && (
-                <p className="mt-3 text-lg text-gray-500">{item.title}</p>
+              {displaySummary && (
+                <p className="mt-3 text-lg text-gray-500">{displayTitle}</p>
               )}
               <div className="mt-4 flex items-center gap-4 text-sm text-gray-400">
-                <span>Fuente: {item.sourceName}</span>
+                <span>{sourceLabel} {item.sourceName}</span>
                 <span>·</span>
                 <time>
-                  {format(new Date(item.publishedAt || item.createdAt), "d MMMM yyyy", { locale: es })}
+                  {locale === 'en'
+                    ? formatDateByLocale(new Date(item.publishedAt || item.createdAt), 'en')
+                    : format(new Date(item.publishedAt || item.createdAt), "d MMMM yyyy", { locale: es })}
                 </time>
               </div>
             </header>
@@ -106,23 +127,23 @@ export default async function NoticiaPage({ params }: Props) {
                 </blockquote>
               )}
 
-              {item.aiSummary && (
+              {displaySummary && (
                 <div className="mb-8">
-                  <p className="text-lg text-primary leading-relaxed">{item.aiSummary}</p>
+                  <p className="text-lg text-primary leading-relaxed">{displaySummary}</p>
                 </div>
               )}
             </div>
 
             {/* Source link */}
             <div className="mt-8 p-5 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-border">
-              <p className="text-sm text-gray-500 mb-3">Lee la noticia completa en la fuente original:</p>
+              <p className="text-sm text-gray-500 mb-3">{readFullLabel}</p>
               <a
                 href={item.sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent/90 transition-colors text-sm font-medium"
               >
-                Leer en {item.sourceName}
+                {readAtLabel}
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
               </a>
             </div>
@@ -149,7 +170,7 @@ export default async function NoticiaPage({ params }: Props) {
 
             {related.length > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-primary mb-4">Más noticias</h3>
+                <h3 className="text-sm font-semibold text-primary mb-4">{moreNewsLabel}</h3>
                 <div className="space-y-4">
                   {related.map((rel) => (
                     <Link
@@ -161,7 +182,7 @@ export default async function NoticiaPage({ params }: Props) {
                         {rel.sourceName}
                       </span>
                       <h4 className="mt-1 text-sm font-medium text-primary group-hover:text-accent transition-colors line-clamp-2">
-                        {rel.aiSummary || rel.title}
+                        {locale === 'en' ? ((rel as Record<string, unknown>).aiSummaryEn as string || rel.aiSummary || (rel as Record<string, unknown>).titleEn as string || rel.title) : (rel.aiSummary || rel.title)}
                       </h4>
                     </Link>
                   ))}

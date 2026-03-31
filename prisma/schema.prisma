@@ -34,6 +34,15 @@ model Article {
   publishedAt     DateTime? @map("published_at")
   scheduledAt     DateTime? @map("scheduled_at")
   seoKeyword      String?   @map("seo_keyword") @db.VarChar(200)
+  // English translations
+  titleEn           String?   @map("title_en") @db.VarChar(500)
+  subtitleEn        String?   @map("subtitle_en") @db.VarChar(500)
+  contentEn         String?   @map("content_en") @db.Text
+  excerptEn         String?   @map("excerpt_en") @db.VarChar(500)
+  metaTitleEn       String?   @map("meta_title_en") @db.VarChar(200)
+  metaDescriptionEn String?   @map("meta_description_en") @db.VarChar(320)
+  coverImageAltEn   String?   @map("cover_image_alt_en") @db.VarChar(255)
+  faqItemsEn        Json?     @map("faq_items_en")
   viewsCount      Int       @default(0) @map("views_count")
   sharesCount     Int       @default(0) @map("shares_count")
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -59,6 +68,10 @@ model Category {
   description     String?  @db.VarChar(500)
   metaTitle       String?  @map("meta_title") @db.VarChar(200)
   metaDescription String?  @map("meta_description") @db.VarChar(320)
+  nameEn            String?   @map("name_en") @db.VarChar(100)
+  descriptionEn     String?   @map("description_en") @db.VarChar(500)
+  metaTitleEn       String?   @map("meta_title_en") @db.VarChar(200)
+  metaDescriptionEn String?   @map("meta_description_en") @db.VarChar(320)
   color           String?  @db.VarChar(7)
   sortOrder       Int      @default(0) @map("sort_order")
   isActive        Boolean  @default(true) @map("is_active")
@@ -78,6 +91,7 @@ model Destination {
   country      String   @db.VarChar(100)
   countrySlug  String   @map("country_slug") @db.VarChar(100)
   description  String?  @db.VarChar(500)
+  descriptionEn String? @map("description_en") @db.VarChar(500)
   coverImage   String?  @map("cover_image") @db.VarChar(500)
   latitude     Decimal? @db.Decimal(10, 8)
   longitude    Decimal? @db.Decimal(11, 8)
@@ -157,6 +171,9 @@ model CuratedItem {
   sourceId          Int?      @map("source_id")
   originalExcerpt   String?   @map("original_excerpt") @db.Text
   aiSummary         String?   @map("ai_summary") @db.Text
+  // English translations
+  titleEn           String?   @map("title_en") @db.VarChar(500)
+  aiSummaryEn       String?   @map("ai_summary_en") @db.Text
   tags              String[]
   relevanceScore    Int       @default(5) @map("relevance_score")
   suggestedCategory String?   @map("suggested_category") @db.VarChar(50)
@@ -205,6 +222,8 @@ model PulseSnapshot {
   eventsData        Json?    @map("events_data")
   seasonType        String?  @map("season_type") @db.VarChar(20)
   aiSummary         String?  @map("ai_summary") @db.Text
+  scoreLabelEn      String?  @map("score_label_en") @db.VarChar(50)
+  aiSummaryEn       String?  @map("ai_summary_en") @db.Text
   createdAt         DateTime @default(now()) @map("created_at")
   updatedAt         DateTime @updatedAt @map("updated_at")
 
@@ -230,4 +249,24 @@ model MarketData {
 
   @@index([destinationId, metricType, period])
   @@map("market_data")
+}
+
+model ContentIdea {
+  id             Int      @id @default(autoincrement())
+  tema           String   @db.VarChar(300)
+  tituloSeo      String   @map("titulo_seo") @db.VarChar(200)
+  slug           String   @db.VarChar(300)
+  ciudad         String   @default("general") @db.VarChar(50)
+  categoria      String   @default("tendencias-turismo") @db.VarChar(100)
+  intencion      String   @default("informacional") @db.VarChar(50)
+  fuente         String   @default("web") @db.VarChar(50)
+  porQueRankea   String?  @map("por_que_rankea") @db.Text
+  scorePotencial Int      @default(5) @map("score_potencial")
+  usado          Boolean  @default(false)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([scorePotencial(sort: Desc)])
+  @@index([usado])
+  @@index([categoria])
+  @@map("content_ideas")
 }
