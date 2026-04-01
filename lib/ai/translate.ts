@@ -23,7 +23,7 @@ export async function translateText({ text, context }: TranslateOptions): Promis
     : `Translate from Spanish to English:\n\n${text}`;
 
   const response = await client.messages.create({
-    model: "claude-haiku-4-5-20241022",
+    model: "claude-sonnet-4-20250514",
     max_tokens: 8192,
     system: TRANSLATE_SYSTEM,
     messages: [{ role: "user", content: userPrompt }],
