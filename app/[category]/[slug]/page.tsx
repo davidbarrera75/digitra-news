@@ -71,19 +71,68 @@ export default async function ArticlePage({ params }: Props) {
     ? (locale === 'en' && cat.nameEn ? cat.nameEn : cat.name)
     : category;
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: displayTitle,
-    description: displayExcerpt,
-    author: { "@type": "Person", name: "David Barrera" },
-    publisher: { "@type": "Organization", name: SITE_NAME },
-    datePublished: article.publishedAt?.toISOString(),
-    dateModified: article.updatedAt.toISOString(),
-    image: article.coverImage || undefined,
-    inLanguage: locale,
-    mainEntityOfPage: `${SITE_URL}/${category}/${slug}`,
-  };
+  // Build rich schema: BlogPosting + FAQPage + HowTo (if available)
+  const articleUrl = `${SITE_URL}/${category}/${slug}`;
+  const graph: Record<string, unknown>[] = [
+    {
+      "@type": "BlogPosting",
+      "@id": `${articleUrl}#article`,
+      headline: displayTitle,
+      description: displayExcerpt,
+      url: articleUrl,
+      datePublished: article.publishedAt?.toISOString(),
+      dateModified: article.updatedAt.toISOString(),
+      image: article.coverImage || undefined,
+      author: { "@type": "Organization", name: "Digitra", url: SITE_URL },
+      publisher: {
+        "@type": "Organization",
+        name: SITE_NAME,
+        url: SITE_URL,
+        logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` },
+      },
+      inLanguage: locale === "en" ? "en" : "es-CO",
+      keywords: article.seoKeyword || undefined,
+      articleSection: categoryName,
+      mainEntityOfPage: articleUrl,
+    },
+  ];
+
+  // FAQPage schema from faqItems
+  const faqItems = article.faqItems as { question: string; answer: string }[] | null;
+  if (faqItems && Array.isArray(faqItems) && faqItems.length > 0) {
+    const faqLocalized = locale === "en" && article.faqItemsEn
+      ? (article.faqItemsEn as { question: string; answer: string }[])
+      : faqItems;
+    graph.push({
+      "@type": "FAQPage",
+      "@id": `${articleUrl}#faq`,
+      mainEntity: faqLocalized.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: { "@type": "Answer", text: faq.answer },
+      })),
+    });
+  }
+
+  // HowTo schema from dataHighlights (if structured as HowTo)
+  const howToData = article.dataHighlights as { name?: string; totalTime?: string; steps?: { name: string; text: string }[] } | null;
+  if (howToData?.steps && Array.isArray(howToData.steps)) {
+    graph.push({
+      "@type": "HowTo",
+      "@id": `${articleUrl}#howto`,
+      name: howToData.name || displayTitle,
+      description: displayExcerpt,
+      totalTime: howToData.totalTime || undefined,
+      step: howToData.steps.map((s, i) => ({
+        "@type": "HowToStep",
+        position: i + 1,
+        name: s.name,
+        text: s.text,
+      })),
+    });
+  }
+
+  const jsonLd = { "@context": "https://schema.org", "@graph": graph };
 
   const readingTimeLabel = locale === 'en'
     ? `${article.readingTime} min read`

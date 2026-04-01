@@ -230,19 +230,53 @@ async function renderArticleFallback(article: Awaited<ReturnType<typeof getArtic
   const readingLabel = locale === 'en' ? `${article.readingTime} min read` : `${article.readingTime} min lectura`;
   const byLabel = locale === 'en' ? 'By David Barrera' : 'Por David Barrera';
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "NewsArticle",
-    headline: displayTitle,
-    description: localized(article, 'excerpt', locale),
-    author: { "@type": "Person", name: "David Barrera" },
-    publisher: { "@type": "Organization", name: SITE_NAME },
-    datePublished: article.publishedAt?.toISOString(),
-    dateModified: article.updatedAt.toISOString(),
-    image: article.coverImage || undefined,
-    inLanguage: locale,
-    mainEntityOfPage: `${SITE_URL}/noticias/${slug}`,
-  };
+  const articleUrl = `${SITE_URL}/noticias/${slug}`;
+  const displayExcerpt = localized(article, 'excerpt', locale);
+  const graph: Record<string, unknown>[] = [
+    {
+      "@type": "BlogPosting",
+      "@id": `${articleUrl}#article`,
+      headline: displayTitle,
+      description: displayExcerpt,
+      url: articleUrl,
+      datePublished: article.publishedAt?.toISOString(),
+      dateModified: article.updatedAt.toISOString(),
+      image: article.coverImage || undefined,
+      author: { "@type": "Organization", name: "Digitra", url: SITE_URL },
+      publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL, logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` } },
+      inLanguage: locale === "en" ? "en" : "es-CO",
+      keywords: article.seoKeyword || undefined,
+      articleSection: newsLabel,
+      mainEntityOfPage: articleUrl,
+    },
+  ];
+  const faqItems = article.faqItems as { question: string; answer: string }[] | null;
+  if (faqItems && Array.isArray(faqItems) && faqItems.length > 0) {
+    const faqLocalized = locale === "en" && article.faqItemsEn
+      ? (article.faqItemsEn as { question: string; answer: string }[])
+      : faqItems;
+    graph.push({
+      "@type": "FAQPage",
+      "@id": `${articleUrl}#faq`,
+      mainEntity: faqLocalized.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: { "@type": "Answer", text: faq.answer },
+      })),
+    });
+  }
+  const howToData = article.dataHighlights as { name?: string; totalTime?: string; steps?: { name: string; text: string }[] } | null;
+  if (howToData?.steps && Array.isArray(howToData.steps)) {
+    graph.push({
+      "@type": "HowTo",
+      "@id": `${articleUrl}#howto`,
+      name: howToData.name || displayTitle,
+      description: displayExcerpt,
+      totalTime: howToData.totalTime || undefined,
+      step: howToData.steps.map((s, i) => ({ "@type": "HowToStep", position: i + 1, name: s.name, text: s.text })),
+    });
+  }
+  const jsonLd = { "@context": "https://schema.org", "@graph": graph };
 
   return (
     <>
