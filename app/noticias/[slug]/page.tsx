@@ -4,9 +4,12 @@ import { notFound } from "next/navigation";
 import { Metadata } from "next";
 import Link from "next/link";
 import { getCuratedItemBySlug, getRelatedCuratedItems } from "@/lib/actions/curated";
+import { getArticleBySlug, getArticlesByCategory } from "@/lib/actions/articles";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import CategoryPill from "@/components/ui/CategoryPill";
 import RentalsCTA from "@/components/cta/RentalsCTA";
+import ArticleCard from "@/components/articles/ArticleCard";
+import ShareButton from "@/components/articles/ShareButton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { getServerLocale } from "@/lib/i18n/server";
@@ -20,7 +23,17 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const item = await getCuratedItemBySlug(slug);
-  if (!item) return {};
+  if (!item) {
+    // Fallback: check if it's an article in "noticias" category
+    const article = await getArticleBySlug(slug);
+    if (article && article.category?.slug === "noticias") {
+      const locale = await getServerLocale();
+      const title = localized(article, 'metaTitle', locale) || localized(article, 'title', locale);
+      const description = localized(article, 'metaDescription', locale) || localized(article, 'excerpt', locale) || undefined;
+      return { title, description };
+    }
+    return {};
+  }
 
   const locale = await getServerLocale();
   const title = localized(item, 'aiSummary', locale) || localized(item, 'title', locale);
@@ -49,7 +62,14 @@ export default async function NoticiaPage({ params }: Props) {
   const { slug } = await params;
   const item = await getCuratedItemBySlug(slug);
 
-  if (!item) notFound();
+  if (!item) {
+    // Fallback: render article if it exists in "noticias" category
+    const article = await getArticleBySlug(slug);
+    if (article && article.category?.slug === "noticias") {
+      return renderArticleFallback(article, slug);
+    }
+    notFound();
+  }
 
   if (item.slug && item.slug !== slug) {
     const { redirect } = await import("next/navigation");
@@ -186,6 +206,98 @@ export default async function NoticiaPage({ params }: Props) {
                       </h4>
                     </Link>
                   ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// Renders an Article (not CuratedItem) that lives in the "noticias" category
+async function renderArticleFallback(article: Awaited<ReturnType<typeof getArticleBySlug>> & {}, slug: string) {
+  const locale = await getServerLocale();
+  const related = (await getArticlesByCategory("noticias", 4)).filter((a) => a.id !== article.id).slice(0, 3);
+
+  const displayTitle = localized(article, 'title', locale);
+  const displaySubtitle = localized(article, 'subtitle', locale);
+  const displayContent = localized(article, 'content', locale);
+  const displayAlt = localized(article, 'coverImageAlt', locale) || displayTitle;
+  const newsLabel = locale === 'en' ? 'News' : 'Noticias';
+  const relatedLabel = locale === 'en' ? 'Related articles' : 'Artículos relacionados';
+  const readingLabel = locale === 'en' ? `${article.readingTime} min read` : `${article.readingTime} min lectura`;
+  const byLabel = locale === 'en' ? 'By David Barrera' : 'Por David Barrera';
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "NewsArticle",
+    headline: displayTitle,
+    description: localized(article, 'excerpt', locale),
+    author: { "@type": "Person", name: "David Barrera" },
+    publisher: { "@type": "Organization", name: SITE_NAME },
+    datePublished: article.publishedAt?.toISOString(),
+    dateModified: article.updatedAt.toISOString(),
+    image: article.coverImage || undefined,
+    inLanguage: locale,
+    mainEntityOfPage: `${SITE_URL}/noticias/${slug}`,
+  };
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="mb-6">
+          <Link href="/noticias" className="text-sm text-accent hover:underline">← {newsLabel}</Link>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <article className="lg:col-span-2">
+            <header className="mb-8">
+              <div className="flex items-center gap-3 mb-4">
+                <CategoryPill name={newsLabel} color="#EF4444" />
+                <span className="text-xs text-gray-400">{readingLabel}</span>
+              </div>
+              <h1 className="text-3xl md:text-5xl font-display font-bold text-primary leading-tight">{displayTitle}</h1>
+              {displaySubtitle && <p className="mt-3 text-xl text-gray-500">{displaySubtitle}</p>}
+              <div className="mt-4 flex items-center justify-between">
+                <div className="flex items-center gap-4 text-sm text-gray-400">
+                  <span>{byLabel}</span>
+                  <span>·</span>
+                  {article.publishedAt && (
+                    <time>
+                      {locale === 'en'
+                        ? formatDateByLocale(new Date(article.publishedAt), 'en')
+                        : format(new Date(article.publishedAt), "d MMMM yyyy", { locale: es })}
+                    </time>
+                  )}
+                </div>
+                <ShareButton url={`${SITE_URL}/noticias/${slug}`} title={displayTitle} />
+              </div>
+            </header>
+            {article.coverImage && (
+              <figure className="mb-8">
+                <div className="relative aspect-[16/9] rounded-xl overflow-hidden bg-gray-100">
+                  <img src={article.coverImage} alt={displayAlt} className="w-full h-full object-cover" />
+                </div>
+              </figure>
+            )}
+            <div className="article-content" dangerouslySetInnerHTML={{ __html: displayContent }} />
+            {article.tags.length > 0 && (
+              <div className="mt-8 flex flex-wrap gap-2">
+                {article.tags.map((tag) => (
+                  <Link key={tag} href={`/tags/${tag}`} className="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-full hover:bg-gray-200 transition-colors">{tag}</Link>
+                ))}
+              </div>
+            )}
+          </article>
+          <aside className="space-y-6">
+            <RentalsCTA variant="sidebar" articleId={article.id} />
+            {related.length > 0 && (
+              <div>
+                <h3 className="text-sm font-semibold text-primary mb-4">{relatedLabel}</h3>
+                <div className="space-y-4">
+                  {related.map((rel) => (<ArticleCard key={rel.id} article={rel} variant="compact" />))}
                 </div>
               </div>
             )}
