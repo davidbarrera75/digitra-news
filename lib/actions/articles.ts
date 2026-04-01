@@ -50,6 +50,21 @@ export async function getAllArticlesAdmin() {
   });
 }
 
+/**
+ * Strip AI-generated SEO metadata blocks from article content.
+ * These blocks start with "Meta title:" and end before the first <hr>.
+ */
+function stripMetaBlock(html: string): string {
+  if (!html) return html;
+  const hrIndex = html.indexOf('<hr>');
+  if (hrIndex < 0) return html;
+  const before = html.substring(0, hrIndex);
+  if (/meta\s*title/i.test(before)) {
+    return html.substring(hrIndex + 4).trim();
+  }
+  return html;
+}
+
 export async function createArticle(data: {
   title: string;
   slug: string;
@@ -92,7 +107,7 @@ export async function createArticle(data: {
     data: {
       title: data.title,
       slug: data.slug,
-      content: data.content,
+      content: stripMetaBlock(data.content),
       excerpt: data.excerpt || null,
       categoryId: data.categoryId || null,
       subcategory: data.subcategory || null,
@@ -125,10 +140,12 @@ export async function createArticle(data: {
 }
 
 export async function updateArticle(id: number, data: Partial<Parameters<typeof createArticle>[0]>) {
+  const cleanData = { ...data };
+  if (cleanData.content) cleanData.content = stripMetaBlock(cleanData.content);
   const article = await prisma.article.update({
     where: { id },
     data: {
-      ...data,
+      ...cleanData,
       publishedAt: data.status === "published" ? new Date() : undefined,
     },
   });
