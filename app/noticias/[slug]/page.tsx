@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
 
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
@@ -30,7 +30,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const locale = await getServerLocale();
       const title = localized(article, 'metaTitle', locale) || localized(article, 'title', locale);
       const description = localized(article, 'metaDescription', locale) || localized(article, 'excerpt', locale) || undefined;
-      return { title, description };
+      const alternates = article.titleEn
+        ? await getAlternates(`/noticias/${slug}`)
+        : undefined;
+      return {
+        title,
+        description,
+        alternates: {
+          canonical: article.canonicalUrl || `${SITE_URL}/noticias/${slug}`,
+          ...(alternates ? { languages: alternates.languages } : {}),
+        },
+      };
     }
     return {};
   }
