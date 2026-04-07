@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Contacto | Digitra News",
+  title: "Contacto",
   description:
-    "Cont&aacute;ctanos para consultas sobre destinos tur&iacute;sticos, sugerencias de contenido, colaboraciones o reportar errores.",
+    "Contáctanos para consultas sobre destinos turísticos, sugerencias de contenido, colaboraciones o reportar errores.",
 };
 
 export default function ContactoPage() {

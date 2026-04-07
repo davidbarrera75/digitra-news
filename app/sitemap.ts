@@ -36,13 +36,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }),
   ]);
 
+  // NOTE: hreflang alternates are only emitted for entries that actually have
+  // a real EN translation (currently: articles with titleEn). Static pages,
+  // categories, destinations and pulse pages serve the same Spanish content
+  // under /en/* and would only generate "alternate page with proper canonical
+  // tag" reports in GSC + waste crawl budget if we declared them.
   const staticPages: MetadataRoute.Sitemap = [
-    { url: SITE_URL, lastModified: new Date(), changeFrequency: "daily", priority: 1, alternates: { languages: buildLanguages("") } },
-    { url: `${SITE_URL}/pulse`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9, alternates: { languages: buildLanguages("/pulse") } },
-    { url: `${SITE_URL}/buscar`, changeFrequency: "weekly", priority: 0.3, alternates: { languages: buildLanguages("/buscar") } },
+    { url: SITE_URL, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
+    { url: `${SITE_URL}/pulse`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },
+    { url: `${SITE_URL}/buscar`, changeFrequency: "weekly", priority: 0.3 },
     { url: `${SITE_URL}/newsletter`, changeFrequency: "monthly", priority: 0.3 },
-    { url: `${SITE_URL}/acerca`, changeFrequency: "monthly", priority: 0.4, alternates: { languages: buildLanguages("/acerca") } },
-    { url: `${SITE_URL}/contacto`, changeFrequency: "monthly", priority: 0.4, alternates: { languages: buildLanguages("/contacto") } },
+    { url: `${SITE_URL}/acerca`, changeFrequency: "monthly", priority: 0.4 },
+    { url: `${SITE_URL}/contacto`, changeFrequency: "monthly", priority: 0.4 },
     { url: `${SITE_URL}/privacidad`, changeFrequency: "monthly", priority: 0.2 },
     { url: `${SITE_URL}/terminos`, changeFrequency: "monthly", priority: 0.2 },
     { url: `${SITE_URL}/politica-editorial`, changeFrequency: "monthly", priority: 0.2 },
@@ -52,14 +57,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: `${SITE_URL}/${cat.slug}`,
     changeFrequency: "daily" as const,
     priority: 0.8,
-    alternates: { languages: buildLanguages(`/${cat.slug}`) },
   }));
 
   const destinationPages: MetadataRoute.Sitemap = destinations.map((dest) => ({
     url: `${SITE_URL}/destinos/${dest.slug}`,
     changeFrequency: "weekly" as const,
     priority: 0.7,
-    alternates: { languages: buildLanguages(`/destinos/${dest.slug}`) },
   }));
 
   // Only add EN alternates for articles that have translations
@@ -79,7 +82,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     lastModified: new Date(),
     changeFrequency: "daily" as const,
     priority: 0.8,
-    alternates: { languages: buildLanguages(`/pulse/${dest.slug}`) },
   }));
 
   const curatedPages: MetadataRoute.Sitemap = curatedItems

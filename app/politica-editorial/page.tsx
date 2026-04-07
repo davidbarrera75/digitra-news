@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pol&iacute;tica Editorial | Digitra News",
+  title: "Política Editorial",
   description:
-    "Conoce nuestros est&aacute;ndares de calidad, &eacute;tica period&iacute;stica y proceso de verificaci&oacute;n de informaci&oacute;n en Digitra News.",
+    "Conoce nuestros estándares de calidad, ética periodística y proceso de verificación de información en Digitra News.",
 };
 
 export default function PoliticaEditorialPage() {

@@ -27,7 +27,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = localized(article, 'metaTitle', locale) || localized(article, 'title', locale);
   const description = localized(article, 'metaDescription', locale) || localized(article, 'excerpt', locale) || undefined;
   const alternates = article.titleEn
-    ? await getAlternates(`/${category}/${slug}`)
+    ? await getAlternates(`/${category}/${slug}`, true)
     : undefined;
 
   return {

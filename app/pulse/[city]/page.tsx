@@ -16,9 +16,9 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { city } = await params;
   const pulse = await getCityPulse(city);
-  if (!pulse) return { title: "Pulse — Digitra News" };
+  if (!pulse) return { title: "Pulse" };
 
-  const title = `${pulse.destination.name} Pulse — vuelos, Airbnb y clima hoy | Digitra News`;
+  const title = `${pulse.destination.name} Pulse — vuelos, Airbnb y clima hoy`;
   const description = pulse.aiSummary || `Estado turístico de ${pulse.destination.name}: vuelos, precios de alojamiento, clima y eventos actualizados diariamente.`;
 
   return {

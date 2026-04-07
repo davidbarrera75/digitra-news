@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       const title = localized(article, 'metaTitle', locale) || localized(article, 'title', locale);
       const description = localized(article, 'metaDescription', locale) || localized(article, 'excerpt', locale) || undefined;
       const alternates = article.titleEn
-        ? await getAlternates(`/noticias/${slug}`)
+        ? await getAlternates(`/noticias/${slug}`, true)
         : undefined;
       return {
         title,
@@ -49,7 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const title = localized(item, 'aiSummary', locale) || localized(item, 'title', locale);
   const description = item.originalExcerpt || title;
   const alternates = (item as Record<string, unknown>).titleEn
-    ? await getAlternates(`/noticias/${item.slug}`)
+    ? await getAlternates(`/noticias/${item.slug}`, true)
     : undefined;
 
   return {

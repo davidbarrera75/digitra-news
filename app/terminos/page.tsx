@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "T&eacute;rminos y Condiciones | Digitra News",
+  title: "Términos y Condiciones",
   description:
-    "T&eacute;rminos y condiciones de uso del sitio web digitra.news. Conoce tus derechos y obligaciones al utilizar nuestro portal.",
+    "Términos y condiciones de uso del sitio web digitra.news. Conoce tus derechos y obligaciones al utilizar nuestro portal.",
 };
 
 export default function TerminosPage() {

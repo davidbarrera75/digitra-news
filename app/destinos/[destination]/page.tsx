@@ -6,6 +6,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { SITE_NAME, SITE_URL } from "@/lib/constants";
 import { getArticleBySlug, getArticlesByCategory } from "@/lib/actions/articles";
+import { getAlternates } from "@/lib/i18n/alternates";
 import ArticleCard from "@/components/articles/ArticleCard";
 import CategoryPill from "@/components/ui/CategoryPill";
 import RentalsCTA from "@/components/cta/RentalsCTA";
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const dest = await prisma.destination.findUnique({ where: { slug } });
   if (dest) {
     return {
-      title: `${dest.name}, ${dest.country} — Guías y datos | ${SITE_NAME}`,
+      title: `${dest.name}, ${dest.country} — Guías y datos`,
       description: dest.description || `Todo sobre turismo en ${dest.name}: guías, precios de Airbnb, tendencias y consejos para viajeros.`,
     };
   }
@@ -31,6 +32,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   // Try as article in "destinos" category
   const article = await getArticleBySlug(slug);
   if (article) {
+    const alternates = article.titleEn
+      ? await getAlternates(`/destinos/${article.slug}`, true)
+      : undefined;
     return {
       title: article.metaTitle || article.title,
       description: article.metaDescription || article.excerpt || undefined,
@@ -41,7 +45,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         publishedTime: article.publishedAt?.toISOString(),
       },
       alternates: {
-        canonical: `${SITE_URL}/destinos/${article.slug}`,
+        canonical: article.canonicalUrl || `${SITE_URL}/destinos/${article.slug}`,
+        ...(alternates ? { languages: alternates.languages } : {}),
       },
     };
   }

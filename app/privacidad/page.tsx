@@ -1,9 +1,9 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Pol&iacute;tica de Privacidad | Digitra News",
+  title: "Política de Privacidad",
   description:
-    "C&oacute;mo recopilamos, usamos, almacenamos y protegemos tu informaci&oacute;n personal en Digitra News.",
+    "Cómo recopilamos, usamos, almacenamos y protegemos tu información personal en Digitra News.",
 };
 
 export default function PrivacidadPage() {

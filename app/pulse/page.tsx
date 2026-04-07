@@ -6,7 +6,7 @@ import { getLatestPulses } from "@/lib/actions/pulse";
 import ComparisonTable from "@/components/pulse/ComparisonTable";
 
 export const metadata: Metadata = {
-  title: "Pulse — Inteligencia Turística en Tiempo Real | Digitra News",
+  title: "Pulse — Inteligencia Turística en Tiempo Real",
   description:
     "Estado diario de las principales ciudades turísticas de Colombia: vuelos, precios Airbnb, clima, eventos y el Digitra Score.",
   openGraph: {
