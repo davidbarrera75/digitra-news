@@ -93,7 +93,20 @@ export default async function DestinationOrArticlePage({ params }: Props) {
 
   // Try as article
   const article = await getArticleBySlug(slug);
-  if (!article || article.status !== "published") notFound();
+  if (!article || article.status !== "published") {
+    const { lookupRedirect, recordRedirectHit } = await import("@/lib/redirects");
+    const r = await lookupRedirect(`/destinos/${slug}`);
+    if (r) {
+      recordRedirectHit(`/destinos/${slug}`);
+      const { redirect, permanentRedirect } = await import("next/navigation");
+      if (r.statusCode === 308 || r.statusCode === 301) {
+        permanentRedirect(r.to);
+      } else {
+        redirect(r.to);
+      }
+    }
+    notFound();
+  }
 
   // If article category is not "destinos", redirect to correct URL
   if (article.category && article.category.slug !== "destinos") {

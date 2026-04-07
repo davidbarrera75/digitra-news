@@ -37,7 +37,18 @@ export async function lookupRedirect(path: string): Promise<RedirectEntry | null
       return null;
     }
   }
-  return cache.get(normalizePath(path)) ?? null;
+  const normalized = normalizePath(path);
+  // Try the path as-is first, then with URL decoding (handles %20, %C3%A9, etc.)
+  let hit = cache.get(normalized);
+  if (!hit) {
+    try {
+      const decoded = decodeURIComponent(normalized);
+      if (decoded !== normalized) hit = cache.get(decoded);
+    } catch {
+      // malformed escape sequences — ignore
+    }
+  }
+  return hit ?? null;
 }
 
 export function invalidateRedirectCache(): void {
