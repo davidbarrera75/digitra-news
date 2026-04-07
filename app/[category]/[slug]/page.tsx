@@ -51,7 +51,25 @@ export default async function ArticlePage({ params }: Props) {
   const { category, slug } = await params;
   const article = await getArticleBySlug(slug);
 
-  if (!article || (article.category && article.category.slug !== category)) {
+  // Article exists but lives in a different category now → 301 to the canonical URL
+  if (article && article.category && article.category.slug !== category) {
+    const { permanentRedirect } = await import("next/navigation");
+    permanentRedirect(`/${article.category.slug}/${article.slug}`);
+  }
+
+  if (!article) {
+    // Check the redirect table before 404ing (for renamed/deleted slugs)
+    const { lookupRedirect, recordRedirectHit } = await import("@/lib/redirects");
+    const r = await lookupRedirect(`/${category}/${slug}`);
+    if (r) {
+      recordRedirectHit(`/${category}/${slug}`);
+      const { redirect, permanentRedirect } = await import("next/navigation");
+      if (r.statusCode === 308 || r.statusCode === 301) {
+        permanentRedirect(r.to);
+      } else {
+        redirect(r.to);
+      }
+    }
     notFound();
   }
 

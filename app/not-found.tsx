@@ -1,5 +1,10 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
+import { headers } from "next/headers";
+import { permanentRedirect, redirect } from "next/navigation";
 import { CATEGORIES } from "@/lib/constants";
+import { lookupRedirect, recordRedirectHit } from "@/lib/redirects";
 
 const POPULAR_CITIES = [
   { name: "Cartagena", href: "/pulse/cartagena" },
@@ -9,7 +14,29 @@ const POPULAR_CITIES = [
   { name: "San Andrés", href: "/pulse/san-andres" },
 ];
 
-export default function NotFound() {
+export default async function NotFound() {
+  // Safety net: middleware sets x-digitra-pathname on every request.
+  // If the unmatched URL has a redirect mapping, 301 it instead of rendering 404.
+  try {
+    const h = headers();
+    const pathname = h.get("x-digitra-pathname");
+    if (pathname) {
+      const r = await lookupRedirect(pathname);
+      if (r) {
+        recordRedirectHit(pathname);
+        if (r.statusCode === 308 || r.statusCode === 301) {
+          permanentRedirect(r.to);
+        } else {
+          redirect(r.to);
+        }
+      }
+    }
+  } catch (err) {
+    // Re-throw redirect signals (Next.js uses thrown errors for control flow)
+    if (err && typeof err === "object" && "digest" in err) throw err;
+    // Otherwise swallow — fail open and render the 404 page
+  }
+
   return (
     <div className="max-w-2xl mx-auto px-4 py-20 text-center">
       <p className="text-7xl font-mono font-black text-accent mb-4">404</p>

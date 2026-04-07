@@ -270,3 +270,17 @@ model ContentIdea {
   @@index([categoria])
   @@map("content_ideas")
 }
+
+model Redirect {
+  id         Int      @id @default(autoincrement())
+  fromPath   String   @unique @map("from_path") @db.VarChar(500)
+  toPath     String   @map("to_path") @db.VarChar(500)
+  statusCode Int      @default(301) @map("status_code")
+  hits       Int      @default(0)
+  notes      String?  @db.Text
+  createdAt  DateTime @default(now()) @map("created_at")
+  lastHitAt  DateTime? @map("last_hit_at")
+
+  @@index([fromPath])
+  @@map("redirects")
+}

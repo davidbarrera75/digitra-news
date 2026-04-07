@@ -78,6 +78,23 @@ export default async function NoticiaPage({ params }: Props) {
     if (article && article.category?.slug === "noticias") {
       return renderArticleFallback(article, slug);
     }
+    // Article exists but moved to a different category → 301 to canonical URL
+    if (article && article.category && article.category.slug !== "noticias") {
+      const { permanentRedirect } = await import("next/navigation");
+      permanentRedirect(`/${article.category.slug}/${article.slug}`);
+    }
+    // Last chance: check the redirect table for renamed/deleted slugs
+    const { lookupRedirect, recordRedirectHit } = await import("@/lib/redirects");
+    const r = await lookupRedirect(`/noticias/${slug}`);
+    if (r) {
+      recordRedirectHit(`/noticias/${slug}`);
+      const { redirect, permanentRedirect } = await import("next/navigation");
+      if (r.statusCode === 308 || r.statusCode === 301) {
+        permanentRedirect(r.to);
+      } else {
+        redirect(r.to);
+      }
+    }
     notFound();
   }
 

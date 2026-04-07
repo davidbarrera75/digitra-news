@@ -28,7 +28,20 @@ export default async function CategoryPage({ params }: Props) {
   const { category: slug } = await params;
   const category = await getCategoryBySlug(slug);
 
-  if (!category) notFound();
+  if (!category) {
+    const { lookupRedirect, recordRedirectHit } = await import("@/lib/redirects");
+    const r = await lookupRedirect(`/${slug}`);
+    if (r) {
+      recordRedirectHit(`/${slug}`);
+      const { redirect, permanentRedirect } = await import("next/navigation");
+      if (r.statusCode === 308 || r.statusCode === 301) {
+        permanentRedirect(r.to);
+      } else {
+        redirect(r.to);
+      }
+    }
+    notFound();
+  }
 
   const articles = await getArticlesByCategory(slug);
 
